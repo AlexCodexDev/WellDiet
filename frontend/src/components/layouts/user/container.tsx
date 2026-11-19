@@ -1,19 +1,16 @@
-import type { ReactNode } from "react";
+import React from "react";
 
-interface Props {
-    children: ReactNode;
-    className?: string;
+interface ContainerProps {
+  children: React.ReactNode;
+  className?: string;
 }
 
-export default function Container({
-    children,
-    className = ""
-}: Props) {
-    return (
-        <div
-            className={`mx-auto w-full h-full max-w-12xl px-4 sm:px-6 lg:px-16 ${className}`}
-        >
-            {children}
-        </div>
-    )
-}
+export const Container: React.FC<ContainerProps> = ({ children, className = "" }) => {
+  return (
+    <div className={`mx-auto w-full max-w-7xl px-5 sm:px-8 lg:px-12 ${className}`}>
+      {children}
+    </div>
+  );
+};
+
+export default Container;
