@@ -1,0 +1,112 @@
+
+services:
+
+  # =================================
+  # FRONTEND - REACT + VITE
+  # =================================
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+
+    container_name: welldiet-frontend
+
+    restart: unless-stopped
+
+    ports:
+      - "5173:5173"
+
+    environment:
+      VITE_API_URL: /api
+      CHOKIDAR_USEPOLLING: "true"
+
+    volumes:
+      - ./frontend:/app
+      - frontend-node-modules:/app/node_modules
+
+    depends_on:
+      - backend
+
+    networks:
+      - welldiet-network
+
+
+  # =================================
+  # BACKEND - EXPRESS JS
+  # =================================
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+
+    container_name: welldiet-backend
+
+    restart: unless-stopped
+
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: ${DATABASE_URL:?DATABASE_URL belum diatur}
+
+    volumes:
+      - ./backend:/app
+      - backend-node-modules:/app/node_modules
+
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+    networks:
+      - welldiet-network
+
+
+  # =================================
+  # DATABASE - MYSQL 8.4
+  # =================================
+  mysql:
+    image: mysql:8.4
+
+    container_name: welldiet-mysql
+
+    restart: unless-stopped
+
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+
+    ports:
+      - "3307:3306"
+
+    volumes:
+      - mysql-data:/var/lib/mysql
+
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - 'mysqladmin ping -h 127.0.0.1 -uroot -p"$${MYSQL_ROOT_PASSWORD}" --silent'
+
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+    networks:
+      - welldiet-network
+
+
+# =================================
+# VOLUMES
+# =================================
+volumes:
+  mysql-data:
+  frontend-node-modules:
+  backend-node-modules:
+
+
+# =================================
+# NETWORK
+# =================================
+networks:
+  welldiet-network:
+    driver: bridge

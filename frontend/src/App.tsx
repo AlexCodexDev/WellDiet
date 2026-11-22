@@ -15,17 +15,17 @@ export default function App() {
   return (
     <Routes>
       <Route path="/" element={<Home />} />
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/register" element={<RegisterPage />} />
-      <Route path="/diet-plans" element={<DietPlanSelectionPage />} />
-      <Route path="/admin" element={<AdminDashboardPage />} />
-<Route path="/admin/dashboard" element={<AdminDashboardPage />} />
-<Route path="/admin/problems" element={<ProblemManagementPage />} />
-<Route path="/admin/rules" element={<RulesAndFactsPage />} />
-<Route path="/admin/reports" element={<AdminReportsPage />} />
-<Route path="/admin/settings" element={<AdminSettingsPage />} />
-<Route path="/diagnosis/questions" element={<DiagnosingQAPage />} />
-<Route path="/about" element={<AboutUsPage />} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
+        <Route path="/diet-plans" element={<DietPlanSelectionPage />} />
+        <Route path="/admin" element={<AdminDashboardPage />} />
+        <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
+        <Route path="/admin/problems" element={<ProblemManagementPage />} />
+        <Route path="/admin/rules" element={<RulesAndFactsPage />} />
+        <Route path="/admin/reports" element={<AdminReportsPage />} />
+        <Route path="/admin/settings" element={<AdminSettingsPage />} />
+        <Route path="/diagnosis/questions" element={<DiagnosingQAPage />} />
+        <Route path="/about" element={<AboutUsPage />} />
     </Routes>
   )
 }
