@@ -41,7 +41,7 @@ export const LoginPage: React.FC = () => {
                 <div className="px-7 pt-9 pb-8 sm:px-10 sm:pt-11 sm:pb-9">
                   {/* Eyebrow */}
                   <div className="flex items-center gap-3">
-                    <span className="h-[1px] w-5 bg-[#7D9285]" />
+                    <span className="h-px w-5 bg-[#7D9285]" />
                     <span className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[#5D7366]">
                       Small Steps. Lasting Wellness.
                     </span>
@@ -61,7 +61,7 @@ export const LoginPage: React.FC = () => {
                 </div>
 
                 {/* Bottom Food Image + Floating Badge */}
-                <div className="relative h-[260px] w-full sm:h-[310px]">
+                <div className="relative h-65 w-full sm:h-77.5">
                   <img
                     src={loginBowlImg}
                     alt="Nourishing grain and avocado bowl"
