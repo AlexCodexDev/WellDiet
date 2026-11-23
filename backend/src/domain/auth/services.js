@@ -1,12 +1,12 @@
 import bcrypt from "bcryptjs";
-import * as DAO from "./dao";
-import { generateToken } from "../../utils/jwt";
+import * as DAO from "./dao.js";
+import { generateToken } from "../../utils/jwt.js";
 
 export const RegisterServices = async (data) => {
-    const { username, email, password } = data;
+    const { name, email, password } = data;
 
-    if(!username) {
-        throw new Error("Username cannot be empty.");
+    if(!name) {
+        throw new Error("Name cannot be empty.");
     }
 
     if(!email) {
@@ -26,14 +26,14 @@ export const RegisterServices = async (data) => {
     const hashedPassword = await bcrypt.hash(password, 12);
 
     const newuser = await DAO.Register({
-        username,
+        name,
         email,
         password: hashedPassword
     });
 
     return {
         id: users.id,
-        username,
+        name,
         email
     }
 }
@@ -73,7 +73,7 @@ export const Login = async (data) => {
         token,
         user: {
             id: user.id,
-            username: user.username,
+            name: user.name,
             email: user.email
         }
     }

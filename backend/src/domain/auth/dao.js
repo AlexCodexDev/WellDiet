@@ -1,6 +1,6 @@
-import { db } from "../../db/index";
+import { db } from "../../db/index.js";
 import { eq } from "drizzle-orm";
-import { users } from "../../db/schema"
+import { users } from "../../db/schema.js"
 
 export const FindUserByEmail = async (email) => {
     const [user] = await db
@@ -16,7 +16,7 @@ export const FindUserById = async (id) => {
     const [user] = await db
         .select({
             id: users.id,
-            username: users.username,
+            name: users.name,
             email: users.email
         })
         .from(users)

@@ -3,10 +3,11 @@ import { Link, useNavigate } from "react-router-dom";
 import PageLayout from "../../components/layouts/user/PageLayout";
 import Container from "../../components/layouts/user/container";
 import loginBowlImg from "../../assets/login-bowl.png";
+import { Notification } from "@/components/notification";
 
 export const RegisterPage: React.FC = () => {
   const navigate = useNavigate();
-  const [fullName, setFullName] = useState("");
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -17,26 +18,42 @@ export const RegisterPage: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setErrorMessage(null);
 
-    const passwordValid = /^(?=.*[A-Za-z])(?=.*\d).{8,}$/.test(password);
-    if (!passwordValid) {
-      setErrorMessage("Password must be at least 8 characters and include both a letter and a number.");
-      return;
-    }
-
-    if (password !== confirmPassword) {
-      setErrorMessage("Passwords do not match. Please re-enter your password.");
-      return;
-    }
-
-    setIsLoading(true);
     try {
-      // Hubungkan ke endpoint register backend Anda (mis. POST /api/auth/register)
-      // await api.post("/auth/register", { full_name: fullName, email, password });
-      await new Promise((resolve) => setTimeout(resolve, 600));
+      setIsLoading(true);
+
+      await fetch(
+        `${import.meta.env.VITE_API_URL}/auth/register`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          credentials: "include",
+          body: JSON.stringify({
+            name,
+            email,
+            password
+          })
+        }
+      )
+  
+      setErrorMessage(null);
+  
+      if (password !== confirmPassword) {
+        setErrorMessage("Passwords do not match. Please re-enter your password.");
+        return;
+      }
+
+      Notification(
+        "Register successful.",
+        "success",
+        false
+      );
+
       navigate("/login");
-    } catch {
+    } catch (error) {
+      console.log(error);
       setErrorMessage("Failed to create account. Please check your details and try again.");
     } finally {
       setIsLoading(false);
@@ -55,7 +72,7 @@ export const RegisterPage: React.FC = () => {
                 <div className="px-7 pt-9 pb-8 sm:px-10 sm:pt-11 sm:pb-9">
                   {/* Eyebrow */}
                   <div className="flex items-center gap-3">
-                    <span className="h-[1px] w-5 bg-[#7D9285]" />
+                    <span className="h-px w-5 bg-[#7D9285]" />
                     <span className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[#5D7366]">
                       Small Steps. Lasting Wellness.
                     </span>
@@ -106,7 +123,7 @@ export const RegisterPage: React.FC = () => {
                 </div>
 
                 {/* Bottom Food Image + Floating Badge */}
-                <div className="relative h-[280px] w-full sm:h-[340px]">
+                <div className="relative h-70 w-full sm:h-85">
                   <img
                     src={loginBowlImg}
                     alt="Nourishing grain and avocado bowl"
@@ -178,8 +195,8 @@ export const RegisterPage: React.FC = () => {
                       type="text"
                       required
                       autoComplete="name"
-                      value={fullName}
-                      onChange={(e) => setFullName(e.target.value)}
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
                       placeholder="Enter your full name"
                       className="w-full rounded-xl border border-stone-200/90 bg-white px-4 py-3 text-sm text-[#182B20] placeholder:text-stone-400 transition-colors focus:border-[#2C4C3B] focus:outline-none focus:ring-1 focus:ring-[#2C4C3B]"
                     />
