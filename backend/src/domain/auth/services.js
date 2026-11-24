@@ -3,10 +3,10 @@ import * as DAO from "./dao.js";
 import { generateToken } from "../../utils/jwt.js";
 
 export const RegisterServices = async (data) => {
-    const { name, email, password } = data;
+    const { username, email, password } = data;
 
-    if(!name) {
-        throw new Error("Name cannot be empty.");
+    if(!username) {
+        throw new Error("Username cannot be empty.");
     }
 
     if(!email) {
@@ -25,20 +25,20 @@ export const RegisterServices = async (data) => {
 
     const hashedPassword = await bcrypt.hash(password, 12);
 
-    const newuser = await DAO.Register({
-        name,
+    await DAO.Register({
+        username,
         email,
         password: hashedPassword
     });
 
     return {
         id: users.id,
-        name,
+        username,
         email
     }
 }
 
-export const Login = async (data) => {
+export const LoginServices = async (data) => {
     const { email, password } = data;
 
     if(!email) {
@@ -66,14 +66,15 @@ export const Login = async (data) => {
 
     const token = generateToken({
         id: user.id,
-        email: user.email
+        email: user.email,
+        username: user.username
     });
 
     return {
         token,
         user: {
             id: user.id,
-            name: user.name,
+            username: user.username,
             email: user.email
         }
     }

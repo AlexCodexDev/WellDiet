@@ -7,7 +7,7 @@ import { Notification } from "@/components/notification";
 
 export const RegisterPage: React.FC = () => {
   const navigate = useNavigate();
-  const [name, setName] = useState("");
+  const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -31,7 +31,7 @@ export const RegisterPage: React.FC = () => {
           },
           credentials: "include",
           body: JSON.stringify({
-            name,
+            username,
             email,
             password
           })
@@ -194,10 +194,10 @@ export const RegisterPage: React.FC = () => {
                       id="fullName"
                       type="text"
                       required
-                      autoComplete="name"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      placeholder="Enter your full name"
+                      autoComplete="off"
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value)}
+                      placeholder="Enter your username"
                       className="w-full rounded-xl border border-stone-200/90 bg-white px-4 py-3 text-sm text-[#182B20] placeholder:text-stone-400 transition-colors focus:border-[#2C4C3B] focus:outline-none focus:ring-1 focus:ring-[#2C4C3B]"
                     />
                   </div>
@@ -214,7 +214,7 @@ export const RegisterPage: React.FC = () => {
                       id="email"
                       type="email"
                       required
-                      autoComplete="email"
+                      autoComplete="off"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="you@example.com"
@@ -235,7 +235,7 @@ export const RegisterPage: React.FC = () => {
                         id="password"
                         type={showPassword ? "text" : "password"}
                         required
-                        autoComplete="new-password"
+                        autoComplete="off"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         placeholder="Create a password"
@@ -301,7 +301,7 @@ export const RegisterPage: React.FC = () => {
                         id="confirmPassword"
                         type={showConfirmPassword ? "text" : "password"}
                         required
-                        autoComplete="new-password"
+                        autoComplete="off"
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
                         placeholder="Re-enter your password"

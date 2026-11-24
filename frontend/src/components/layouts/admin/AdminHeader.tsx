@@ -1,3 +1,4 @@
+import { useAuth } from "@/context/AuthContext";
 import React from "react";
 
 interface AdminHeaderProps {
@@ -6,6 +7,13 @@ interface AdminHeaderProps {
 }
 
 export const AdminHeader: React.FC<AdminHeaderProps> = ({ onOpenSidebar, breadcrumb }) => {
+  const { user } = useAuth();
+  
+  if(user?.username) {
+    return;
+  }
+  const splitUsername = user?.username.trim().split(" ");
+  
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-stone-200/80 bg-[#FAF9F6]/95 px-5 backdrop-blur-xs sm:px-8">
       {/* Left: Mobile Sidebar Toggle + Breadcrumb */}
@@ -33,7 +41,7 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({ onOpenSidebar, breadcr
       {/* Right: Search + Notification + Profile */}
       <div className="flex items-center gap-3.5">
         {/* Global Search Input */}
-        <div className="relative hidden md:block">
+        {/* <div className="relative hidden md:block">
           <svg
             viewBox="0 0 16 16"
             fill="none"
@@ -52,10 +60,10 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({ onOpenSidebar, breadcr
           <kbd className="absolute top-1/2 right-2.5 -translate-y-1/2 rounded border border-stone-200 bg-[#FAF9F6] px-1.5 py-0.5 text-[10px] font-medium text-[#7D8A83]">
             ⌘ K
           </kbd>
-        </div>
+        </div> */}
 
         {/* Notification Bell */}
-        <button
+        {/* <button
           type="button"
           aria-label="Notifications"
           className="relative rounded-full p-2 text-[#5A6560] transition-colors hover:bg-stone-200/50 hover:text-[#182B20]"
@@ -68,16 +76,18 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({ onOpenSidebar, breadcr
             />
           </svg>
           <span className="absolute top-1.5 right-1.5 h-1.5 w-1.5 rounded-full bg-emerald-500" />
-        </button>
+        </button> */}
 
         {/* Profile Badge */}
         <div className="flex items-center gap-3 border-l border-stone-200/80 pl-4">
           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#E6EDE4] text-xs font-semibold text-[#2C4C3B]">
-            EC
+            {splitUsername?.map((item) => (
+              item.charAt(0)
+            ))}
           </div>
           <div className="text-left leading-tight">
-            <p className="text-xs font-semibold text-[#182B20]">Emma Collins</p>
-            <p className="text-[10px] text-[#6E7A74]">Administrator</p>
+            <p className="text-xs font-semibold text-[#182B20]">{user?.username}</p>
+            <p className="text-[10px] text-[#6E7A74]">{user?.email}</p>
           </div>
           <svg
             viewBox="0 0 16 16"

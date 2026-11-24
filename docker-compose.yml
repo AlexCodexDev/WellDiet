@@ -18,10 +18,8 @@ services:
 
     environment:
       VITE_API_URL: /api
-      CHOKIDAR_USEPOLLING: "true"
 
     volumes:
-      - ./frontend:/app
       - frontend-node-modules:/app/node_modules
 
     depends_on:
@@ -29,6 +27,30 @@ services:
 
     networks:
       - welldiet-network
+
+    develop:
+      watch:
+        # React HMR
+        - action: sync
+          path: ./frontend/src
+          target: /app/src
+
+        # HTML
+        - action: sync
+          path: ./frontend/index.html
+          target: /app/index.html
+
+        # Vite configuration
+        - action: sync+restart
+          path: ./frontend/vite.config.js
+          target: /app/vite.config.js
+
+        # Dependencies
+        - action: rebuild
+          path: ./frontend/package.json
+
+        - action: rebuild
+          path: ./frontend/pnpm-lock.yaml
 
 
   # =================================
@@ -46,9 +68,10 @@ services:
     environment:
       NODE_ENV: development
       DATABASE_URL: ${DATABASE_URL:?DATABASE_URL belum diatur}
+      JWT_TOKEN: ${JWT_TOKEN:?JWT_TOKEN belum diatur}
+      JWT_EXPIRE_IN: ${JWT_EXPIRE_IN:-2h}
 
     volumes:
-      - ./backend:/app
       - backend-node-modules:/app/node_modules
 
     depends_on:
@@ -57,6 +80,25 @@ services:
 
     networks:
       - welldiet-network
+
+    develop:
+      watch:
+        # Backend source code
+        - action: sync+restart
+          path: ./backend/src
+          target: /app/src
+
+        # Drizzle configuration
+        - action: sync+restart
+          path: ./backend/drizzle.config.js
+          target: /app/drizzle.config.js
+
+        # Dependencies
+        - action: rebuild
+          path: ./backend/package.json
+
+        - action: rebuild
+          path: ./backend/pnpm-lock.yaml
 
 
   # =================================

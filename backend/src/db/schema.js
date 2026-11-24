@@ -42,7 +42,7 @@ export const fact_definitions = mysqlTable("fact_definitions", {
 export const assessments_facts = mysqlTable("assessments_facts", {
     id: bigint("id", { mode: "number", unsigned: true }).autoincrement().primaryKey(),
     assessmentId: bigint("assessment_id", { mode: "number", unsigned: true }).notNull().references(() => assessments.id),
-    factDefinitionId: bigint("fact_assessment_id", { mode: "number", unsigned: true }).notNull().references(() => fact_definitions.id),
+    factDefinitionId: bigint("fact_definition_id", { mode: "number", unsigned: true }).notNull().references(() => fact_definitions.id),
     value: varchar("value", { length: 255 }).notNull(),
     source: varchar("source", { length: 255 }).notNull(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -61,7 +61,7 @@ export const goals = mysqlTable("goals", {
 
 export const rules = mysqlTable("rules", {
     id: bigint("id", { mode: "number", unsigned: true }).autoincrement().primaryKey(),
-    goalId: bigint("goalId", { mode: "number", unsigned: true }).notNull().references(() => goals.id),
+    goalId: bigint("goal_id", { mode: "number", unsigned: true }).notNull().references(() => goals.id),
     dietCategoryId: bigint("diet_category_id", { mode: "number", unsigned: true }).notNull().references(() => diet_categories.id),
     code: varchar("code", { length: 255 }).notNull(),
     name: varchar("name", { length: 255 }).notNull(),
@@ -139,7 +139,7 @@ export const recommendation_results = mysqlTable("recommendation_results", {
 export const recommendation_result_actions = mysqlTable("recommendation_result_actions", {
     id: bigint("id", { mode: "number", unsigned: true }).autoincrement().primaryKey(),
     resultId: bigint("result_id", { mode: "number", unsigned: true }).notNull().references(() => recommendation_results.id),
-    actionId: bigint("goal_id", { mode: "number", unsigned: true }).notNull().references(() => actions.id),
+    actionId: bigint("action_id", { mode: "number", unsigned: true }).notNull().references(() => actions.id),
     actionSnapshot: json("action_snapshot"),
     sequence: int("sequence"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -147,7 +147,7 @@ export const recommendation_result_actions = mysqlTable("recommendation_result_a
     deletedAt: timestamp("deleted_at")
 });
 
-export const diet_categories = mysqlTable("category", {
+export const diet_categories = mysqlTable("diet_categories", {
     id: bigint("id", { mode: "number", unsigned: true }).autoincrement().primaryKey(),
     code: varchar("code", { length: 255 }).notNull(),
     name: varchar("name", { length: 100 }).notNull(),

@@ -16,7 +16,7 @@ export const FindUserById = async (id) => {
     const [user] = await db
         .select({
             id: users.id,
-            name: users.name,
+            username: users.username,
             email: users.email
         })
         .from(users)

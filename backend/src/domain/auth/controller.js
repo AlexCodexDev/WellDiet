@@ -23,7 +23,7 @@ export const RegisterController = async (req, res) => {
 
 export const LoginController = async (req, res) => {
     try {
-        const result = await Services.Login(req.body);
+        const result = await Services.LoginServices(req.body);
 
         res.cookie("token", result.token, cookieOptions);
 
@@ -32,7 +32,7 @@ export const LoginController = async (req, res) => {
             data: result.user
         });
     } catch (error) {
-        return res.status(500).json(error.message);
+        return res.status(500).json({ message: error.message });
     }
 }
 

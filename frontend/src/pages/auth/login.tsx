@@ -18,11 +18,30 @@ export const LoginPage: React.FC = () => {
     setIsLoading(true);
 
     try {
-      // Hubungkan ke endpoint auth backend Anda (mis. POST /api/auth/login)
-      // const response = await api.post("/auth/login", { email, password });
-      await new Promise((resolve) => setTimeout(resolve, 600));
-      navigate("/");
-    } catch {
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/auth/login`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          credentials: "include",
+          body: JSON.stringify({
+            email,
+            password
+          })
+        }
+      );
+
+      const data = await response.json();
+      
+      if(!response.ok) {
+        setErrorMessage(data.message || "Login failed.");
+      }
+
+      navigate("/admin/dashboard", { replace: true });
+    } catch (error) {
+      console.log(error);
       setErrorMessage("Invalid email or password. Please try again.");
     } finally {
       setIsLoading(false);
@@ -131,7 +150,7 @@ export const LoginPage: React.FC = () => {
                       id="email"
                       type="email"
                       required
-                      autoComplete="email"
+                      autoComplete="off"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="you@example.com"
@@ -152,7 +171,7 @@ export const LoginPage: React.FC = () => {
                         id="password"
                         type={showPassword ? "text" : "password"}
                         required
-                        autoComplete="current-password"
+                        autoComplete="off"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         placeholder="Enter your password"

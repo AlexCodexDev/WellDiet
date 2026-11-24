@@ -10,13 +10,27 @@ interface SidebarProps {
 const workspaceMenu = [
   {
     label: "Overview",
-    to: "/admin",
+    to: "/admin/dashboard",
     icon: (
       <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" className="h-4 w-4">
         <rect x="3" y="3" width="5.5" height="5.5" rx="1.2" />
         <rect x="11.5" y="3" width="5.5" height="5.5" rx="1.2" />
         <rect x="3" y="11.5" width="5.5" height="5.5" rx="1.2" />
         <rect x="11.5" y="11.5" width="5.5" height="5.5" rx="1.2" />
+      </svg>
+    ),
+  },
+  {
+    label: "Categories",
+    to: "/admin/categories",
+    icon: (
+      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" className="h-4 w-4">
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M13 7a3 3 0 11-6 0 3 3 0 016 0zM4 16.5a5.5 5.5 0 0112 0"
+        />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M15.5 9.5a2.5 2.5 0 010 5" />
       </svg>
     ),
   },
