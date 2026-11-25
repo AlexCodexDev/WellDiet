@@ -1,11 +1,12 @@
 import React, { useState } from "react";
 import AdminLayout from "../../components/layouts/admin/AdminLayout";
+import { useAuth } from "@/context/AuthContext";
+import { Notification } from "@/components/notification";
 
 type SettingsTab = "General" | "Team & access" | "Notifications" | "Security" | "Integrations";
 
 interface SettingsState {
-  firstName: string;
-  lastName: string;
+  username: string;
   email: string;
   role: string;
   language: string;
@@ -19,11 +20,16 @@ interface SettingsState {
   twoFactorEnabled: boolean;
 }
 
+interface PasswordErrors {
+  currentPassword?: string;
+  NewPassword?: string;
+  NewPasswordConfirmation?: string;
+}
+
 const defaultSettings: SettingsState = {
-  firstName: "Emma",
-  lastName: "Collins",
-  email: "emma.collins@welldiet.com",
-  role: "Administrator",
+  username: "",
+  email: "",
+  role: "",
   language: "English",
   workspaceName: "Well Diet",
   timeZone: "(UTC+07:00) Jakarta",
@@ -32,7 +38,7 @@ const defaultSettings: SettingsState = {
   weeklySummary: true,
   ruleReviewRequests: true,
   productNews: false,
-  twoFactorEnabled: true,
+  twoFactorEnabled: false,
 };
 
 const settingsTabs: SettingsTab[] = [
@@ -44,14 +50,35 @@ const settingsTabs: SettingsTab[] = [
 ];
 
 export const AdminSettingsPage: React.FC = () => {
+  const { user } = useAuth();
+
+  const username = user?.username ?? "";
+  const email = user?.email ?? "";
+  const role = user?.role ?? "Admin";
+
   const [activeTab, setActiveTab] = useState<SettingsTab>("General");
-  const [savedData, setSavedData] = useState<SettingsState>(defaultSettings);
-  const [formData, setFormData] = useState<SettingsState>(defaultSettings);
+  const [savedData, setSavedData] = useState<SettingsState>({
+    ...defaultSettings,
+    username: username,
+    email: email,
+    role: role
+  });
+  const [formData, setFormData] = useState<SettingsState>({
+    ...defaultSettings,
+    username: username,
+    email: email,
+    role: role
+  });
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
-  const [currentPassword, setCurrentPassword] = useState("");
-  const [newPassword, setNewPassword] = useState("");
+  
+  const [currentPassword, setCurrentPassword] = useState<string>("");
+  const [newPassword, setNewPassword] = useState<string>("");
+  const [newPasswordConfirmation, setNewPasswordConfirmation] = useState<string>("");
   const [lastPasswordChanged, setLastPasswordChanged] = useState("October 22, 2026");
+
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [errorMessage, setErrorMessage] = useState<PasswordErrors>({});
 
   const handleFieldChange = <K extends keyof SettingsState>(
     key: K,
@@ -66,26 +93,118 @@ export const AdminSettingsPage: React.FC = () => {
     setSaveSuccess(false);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
+    setIsLoading(true);
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/auth/profile-change`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          credentials: "include",
+          body: JSON.stringify({
+            formData
+          })
+        },
+      );
+
+      const result = await response.json();
+
+      if(!response.ok) {
+        Notification(
+          result,
+          "error",
+          false
+        );
+
+        return;
+      }
+    } catch (error: any) {
+
+    } finally {
+      setIsLoading(false);
+    }
+
     setSavedData(formData);
     setSaveSuccess(true);
-    setTimeout(() => setSaveSuccess(false), 3000);
   };
 
-  const handlePasswordSubmit = (e: React.FormEvent) => {
+  const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!currentPassword || !newPassword) return;
+
+    const validatedPassword: PasswordErrors = {};
+
+    if(!currentPassword) {
+      validatedPassword.currentPassword = "Current password cannot be empty.";
+    }
+
+    if(!newPassword) {
+      validatedPassword.NewPassword = "New password cannot be empty.";
+    }
+
+    if(!newPasswordConfirmation) {
+      validatedPassword.NewPasswordConfirmation = "New password confirmation cannot be empty.";
+    }
+
+    if(newPassword && newPasswordConfirmation && newPassword !== newPasswordConfirmation) {
+      validatedPassword.NewPasswordConfirmation = "New password does not match.";
+    }
+
+    setErrorMessage(validatedPassword);
+
+    if(Object.keys(validatedPassword).length > 0) return;
+
+    const response = await fetch(
+      `${import.meta.env.VITE_API_URL}/auth/change-password`,
+      {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        credentials: "include",
+        body: JSON.stringify({
+          current: currentPassword,
+          password: newPassword
+        })
+      }
+    );
+    
+    const result = await response.json();
+
+    if(!response.ok) {
+      Notification(
+        result.message,
+        "error",
+        false
+      );
+
+      return;
+    }
+
+    Notification(
+      result.message,
+      "success",
+      false
+    );
+
+    const updatedAt = result.updateDate;
+
     setLastPasswordChanged("November 15, 2026");
     setCurrentPassword("");
     setNewPassword("");
     setIsPasswordModalOpen(false);
     setSaveSuccess(true);
-    setTimeout(() => setSaveSuccess(false), 3000);
   };
+
+  if(isLoading) {
+    <p>Loading...</p>
+  }
 
   return (
     <AdminLayout>
-      <div className="mx-auto max-w-[1320px] space-y-6">
+      <div className="mx-auto max-w-330 space-y-6">
         {/* Top Page Header & Action Buttons */}
         <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
           <div>
@@ -112,7 +231,7 @@ export const AdminSettingsPage: React.FC = () => {
               onClick={handleCancel}
               className="inline-flex cursor-pointer items-center justify-center rounded-full border border-stone-200 bg-white px-5 py-2 text-xs font-medium text-[#182B20] transition-colors hover:bg-stone-50"
             >
-              Cancel
+              Reset
             </button>
 
             <button
@@ -171,35 +290,19 @@ export const AdminSettingsPage: React.FC = () => {
 
               <div className="mt-5 space-y-4">
                 {/* First & Last Name */}
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div>
                   <div>
                     <label
                       htmlFor="firstName"
                       className="mb-1.5 block text-xs font-medium text-[#182B20]"
                     >
-                      First name
+                      Username
                     </label>
                     <input
-                      id="firstName"
+                      id="username"
                       type="text"
-                      value={formData.firstName}
-                      onChange={(e) => handleFieldChange("firstName", e.target.value)}
-                      className="w-full rounded-xl border border-stone-200/80 bg-[#F6F6F2] px-3.5 py-2.5 text-xs font-medium text-[#182B20] transition-colors focus:border-[#2C4C3B] focus:bg-white focus:outline-none"
-                    />
-                  </div>
-
-                  <div>
-                    <label
-                      htmlFor="lastName"
-                      className="mb-1.5 block text-xs font-medium text-[#182B20]"
-                    >
-                      Last name
-                    </label>
-                    <input
-                      id="lastName"
-                      type="text"
-                      value={formData.lastName}
-                      onChange={(e) => handleFieldChange("lastName", e.target.value)}
+                      value={formData.username}
+                      onChange={(e) => handleFieldChange("username", e.target.value)}
                       className="w-full rounded-xl border border-stone-200/80 bg-[#F6F6F2] px-3.5 py-2.5 text-xs font-medium text-[#182B20] transition-colors focus:border-[#2C4C3B] focus:bg-white focus:outline-none"
                     />
                   </div>
@@ -562,9 +665,9 @@ export const AdminSettingsPage: React.FC = () => {
             </div>
 
             <form onSubmit={handlePasswordSubmit} className="mt-4 space-y-4">
-              <div>
+              <div className="flex flex-col gap-1.5">
                 <label className="mb-1 block text-xs font-semibold text-[#182B20]">
-                  Current password
+                  Current password <span className="text-[#182B20]">*</span>
                 </label>
                 <input
                   type="password"
@@ -574,11 +677,20 @@ export const AdminSettingsPage: React.FC = () => {
                   placeholder="Enter current password"
                   className="w-full rounded-xl border border-stone-200 px-3.5 py-2.5 text-xs text-[#182B20] focus:border-[#2C4C3B] focus:outline-none"
                 />
+                {errorMessage.currentPassword && (
+                  <span className={`
+                      ${errorMessage === null ? 'hidden' : ''}
+                      text-xs text-[#182B20] bg-[#E4ECE0] font-bold px-2 py-1.5 rounded-xl
+                    `}
+                  >
+                    {errorMessage.currentPassword}
+                  </span>
+                )}
               </div>
 
-              <div>
+              <div className="flex flex-col gap-1.5">
                 <label className="mb-1 block text-xs font-semibold text-[#182B20]">
-                  New password
+                  New password <span className="text-[#182B20]">*</span>
                 </label>
                 <input
                   type="password"
@@ -589,6 +701,39 @@ export const AdminSettingsPage: React.FC = () => {
                   placeholder="At least 8 characters"
                   className="w-full rounded-xl border border-stone-200 px-3.5 py-2.5 text-xs text-[#182B20] focus:border-[#2C4C3B] focus:outline-none"
                 />
+                {errorMessage.NewPassword && (
+                  <span className={`
+                      ${errorMessage === null ? 'hidden' : ''}
+                      text-xs text-[#182B20] bg-[#E4ECE0] font-bold px-2 py-1.5 rounded-xl
+                    `}
+                  >
+                    {errorMessage.NewPassword}
+                  </span>
+                )}
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="mb-1 block text-xs font-semibold text-[#182B20]">
+                  New password Confirmation <span className="text-[#182B20]">*</span>
+                </label>
+                <input
+                  type="password"
+                  required
+                  minLength={8}
+                  value={newPasswordConfirmation}
+                  onChange={(e) => setNewPasswordConfirmation(e.target.value)}
+                  placeholder="At least 8 characters"
+                  className="w-full rounded-xl border border-stone-200 px-3.5 py-2.5 text-xs text-[#182B20] focus:border-[#2C4C3B] focus:outline-none"
+                />
+                {errorMessage.NewPasswordConfirmation && (
+                  <span className={`
+                      ${errorMessage === null ? 'hidden' : ''}
+                      text-xs text-[#182B20] bg-[#E4ECE0] font-bold px-2 py-1.5 rounded-xl
+                    `}
+                  >
+                    {errorMessage.NewPasswordConfirmation}
+                  </span>
+                )}
               </div>
 
               <div className="flex justify-end gap-2 pt-2">

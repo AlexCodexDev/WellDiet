@@ -16,7 +16,6 @@ export const RegisterController = async (req, res) => {
             data: user
         });
     } catch (error) {
-        console.log(error);
         return res.status(500).json(error.message);
     }
 }

@@ -68,3 +68,7 @@ export const Register = async (data) => {
         id: result.insertId
     };
 }
+
+export const ChangePasswordDAO = async (data) => {
+    const {  }
+}

@@ -9,9 +9,6 @@ interface AdminHeaderProps {
 export const AdminHeader: React.FC<AdminHeaderProps> = ({ onOpenSidebar, breadcrumb }) => {
   const { user } = useAuth();
 
-  if(user?.username) {
-    return;
-  }
   const splitUsername = user?.username.trim().split(" ");
   
   return (
