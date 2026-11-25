@@ -25,14 +25,14 @@ export const RegisterServices = async (data) => {
 
     const hashedPassword = await bcrypt.hash(password, 12);
 
-    await DAO.Register({
+    const result = await DAO.Register({
         username,
         email,
         password: hashedPassword
     });
 
     return {
-        id: users.id,
+        id: result.id,
         username,
         email
     }
@@ -67,7 +67,8 @@ export const LoginServices = async (data) => {
     const token = generateToken({
         id: user.id,
         email: user.email,
-        username: user.username
+        username: user.username,
+        role: user.role
     });
 
     return {

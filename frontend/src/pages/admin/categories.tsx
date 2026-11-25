@@ -6,7 +6,7 @@ interface CategoriesProps {
   code: string;
   name: string;
   description: string;
-  isActive: boolean;
+  is_active: boolean;
 }
 
 export const CategoriesPage: React.FC = () => {
@@ -18,6 +18,7 @@ export const CategoriesPage: React.FC = () => {
   const [data, setData] = useState<CategoriesProps[]>([]);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+  const [activeStatus, setActiveStatus] = useState("active");
   const [selectedCode, setSelectedCode] = useState<string | null>(null);
 
  const handleUpdateModal = (
@@ -41,14 +42,16 @@ export const CategoriesPage: React.FC = () => {
         }
       );
   
-      const data = await response.json();
-      
+      const data: CategoriesProps[] = await response.json();
+
       if(!response.ok) {
         Notification(
           "Failed to fetch category.",
           "error",
           false
         );
+
+        return;
       }
   
       setData(data);
@@ -57,7 +60,7 @@ export const CategoriesPage: React.FC = () => {
         error.message,
         "error",
         false
-      )
+      );
     } finally {
       setIsLoading(false);
     }
@@ -91,6 +94,8 @@ export const CategoriesPage: React.FC = () => {
           "error",
           false
         );
+
+        return;
       }
 
       await fetchCategory();
@@ -131,7 +136,8 @@ export const CategoriesPage: React.FC = () => {
           credentials: "include",
           body: JSON.stringify({
             name,
-            description
+            description,
+            activeStatus
           })
         }
       );
@@ -144,6 +150,8 @@ export const CategoriesPage: React.FC = () => {
           "error",
           false
         );
+
+        return;
       }
 
       await fetchCategory();
@@ -192,8 +200,10 @@ export const CategoriesPage: React.FC = () => {
         Notification(
           result,
           "error",
-          false    
+          false
         );
+
+        return;
       }
   
       await fetchCategory();
@@ -211,12 +221,21 @@ export const CategoriesPage: React.FC = () => {
         error.message,
         "error",
         false
-      )
+      );
     } finally {
       setIsLoading(false);
     }
   }
   // END: Delete
+
+  // START: Function cancel
+  function onCancel() {
+    setName("");
+    setDescription("");
+    setActiveStatus("active");
+    setSelectedCode(null);
+  }
+  // END: Function cancel
 
   useEffect(() => {
     fetchCategory();
@@ -224,7 +243,7 @@ export const CategoriesPage: React.FC = () => {
 
   return (
     <AdminLayout>
-      <div className="mx-auto max-w-[1320px] space-y-6">
+      <div className="mx-auto max-w-330 space-y-6">
         {/* Top Page Header */}
         <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
           <div>
@@ -302,7 +321,10 @@ export const CategoriesPage: React.FC = () => {
                         {item.description || "-"}
                       </td>
                       <td className="py-3.5 pr-4 whitespace-nowrap">
-                        {item.isActive === true ? "Active" : "NonActive"}
+                        {item.is_active === 1 ?
+                          <p className="bg-[#2C4C3B] py-2 px-2 text-white rounded-2xl w-20 text-center">Active</p> :
+                          <p className="bg-[#E7ECE2] py-2 px-2 text-bg-[#2C4C3B] rounded-2xl w-20 text-center">In Active</p>
+                        }
                       </td>
                       <td className="py-3.5 flex gap-2 justify-end text-right whitespace-nowrap">
                         <button
@@ -378,7 +400,10 @@ export const CategoriesPage: React.FC = () => {
               <h3 className="font-serif text-xl font-normal text-[#182B20]">Add new category</h3>
               <button
                 type="button"
-                onClick={() => setIsModalOpen(false)}
+                onClick={() => {
+                  setIsModalOpen(false);
+                  onCancel();
+                }}
                 className="rounded-lg p-1 text-[#6E7A74] hover:bg-stone-100 cursor-pointer"
               >
                 ✕
@@ -421,10 +446,29 @@ export const CategoriesPage: React.FC = () => {
                 />
               </div>
 
+              {selectedCode !== null && (
+                <div>
+                  <label className="mb-1 block text-xs font-semibold text-[#182B20]">
+                    Active Status <span className="text-[#182B20]">*</span>
+                  </label>
+                  <select
+                    value={activeStatus}
+                    onChange={(e) => setActiveStatus(e.target.value)}
+                    className="w-full rounded-xl border border-stone-200 px-3.5 py-2.5 text-xs text-[#182B20] focus:border-[#2C4C3B] focus:outline-none"
+                  >
+                    <option value="active">Active</option>
+                    <option value="in_active">In Active</option>
+                  </select>
+                </div>
+              )}
+
               <div className="flex justify-end gap-2 pt-2">
                 <button
                   type="button"
-                  onClick={() => setIsModalOpen(false)}
+                  onClick={() => {
+                    setIsModalOpen(false);
+                    onCancel();
+                  }}
                   className="rounded-full border border-stone-200 px-4 py-2 text-xs font-medium text-[#5A6560] hover:bg-stone-50 cursor-pointer"
                 >
                   Cancel
@@ -448,7 +492,10 @@ export const CategoriesPage: React.FC = () => {
               <h3 className="font-serif text-xl font-normal text-[#182B20]">Delete Confirmation</h3>
               <button
                 type="button"
-                onClick={() => setIsDeleteModalOpen(false)}
+                onClick={() => {
+                  setIsDeleteModalOpen(false);
+                  onCancel();
+                }}
                 className="rounded-lg p-1 text-[#6E7A74] hover:bg-stone-100 cursor-pointer"
               >
                 ✕
@@ -460,7 +507,10 @@ export const CategoriesPage: React.FC = () => {
               <div className="flex gap-2 pt-4">
                 <button
                   type="button"
-                  onClick={() => setIsDeleteModalOpen(false)}
+                  onClick={() => {
+                    setIsDeleteModalOpen(false);
+                    onCancel();
+                  }}
                   className="rounded-full border border-stone-200 px-4 py-2 text-sm font-medium text-[#5A6560] hover:bg-stone-50 cursor-pointer"
                 >
                   Cancel

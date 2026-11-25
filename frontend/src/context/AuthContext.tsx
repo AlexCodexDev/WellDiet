@@ -12,6 +12,7 @@ interface AuthUser {
     id: string | number;
     username: string;
     email: string;
+    role: "user" | "admin";
 }
 
 interface RegisterData {

@@ -1,0 +1,27 @@
+{
+  "version": "7",
+  "dialect": "mysql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "5",
+      "when": 1795447976367,
+      "tag": "0000_cynical_terrax",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "5",
+      "when": 1795574891990,
+      "tag": "0001_premium_epoch",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1795578291887,
+      "tag": "0002_outgoing_mulholland_black",
+      "breakpoints": true
+    }
+  ]
+}

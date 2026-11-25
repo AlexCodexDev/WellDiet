@@ -22,7 +22,7 @@ export const RegisterPage: React.FC = () => {
     try {
       setIsLoading(true);
 
-      await fetch(
+      const response = await fetch(
         `${import.meta.env.VITE_API_URL}/auth/register`,
         {
           method: "POST",
@@ -45,6 +45,15 @@ export const RegisterPage: React.FC = () => {
         return;
       }
 
+      if(!response.ok) {
+        Notification(
+          "Register failed.",
+          "error",
+          false
+        );
+        return;
+      }
+
       Notification(
         "Register successful.",
         "success",
@@ -53,7 +62,6 @@ export const RegisterPage: React.FC = () => {
 
       navigate("/login");
     } catch (error) {
-      console.log(error);
       setErrorMessage("Failed to create account. Please check your details and try again.");
     } finally {
       setIsLoading(false);

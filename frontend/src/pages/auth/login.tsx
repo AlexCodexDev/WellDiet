@@ -41,7 +41,6 @@ export const LoginPage: React.FC = () => {
 
       navigate("/admin/dashboard", { replace: true });
     } catch (error) {
-      console.log(error);
       setErrorMessage("Invalid email or password. Please try again.");
     } finally {
       setIsLoading(false);
