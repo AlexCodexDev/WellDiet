@@ -1,28 +1,12 @@
 import db from "../../db/index.js";
 
-async function GenerateCategoryCode(sequence) {
-    const parts = new Intl.DateTimeFormat("en", {
-        timeZone: "Asia/Jakarta",
-        year: "2-digit",
-        month: "2-digit",
-        day: "2-digit"
-    }).formatToParts(new Date());
-
-    const year = parts.find(p => p.type === "year").value;
-    const month = parts.find(p => p.type === "month").value;
-    const day = parts.find(p => p.type === "day").value;
-
-    const dateCode = `${year}${month}${day}`;
-
-    return `CAT-${dateCode}-${String(sequence).padStart(3, "0")}`;
-}
-
 export const FetchDAO = async () => {
     const [data] = await db.execute(
         `
-        SELECT code, name, description, is_active
+        SELECT code, name, description, is_active, created_at
         FROM diet_categories
         WHERE deleted_at IS NULL
+        ORDER BY created_at DESC
         `
     );
 
@@ -93,7 +77,7 @@ export const CreateDAO = async (data) => {
                 code,
                 data.name,
                 data.description ?? null,
-                data.isActive ?? true
+                true
             ]
         );
 
@@ -105,7 +89,7 @@ export const CreateDAO = async (data) => {
             code,
             name: data.name,
             description: data.description ?? null,
-            isActive: data.isActive ?? true
+            isActive: true
         }
     } catch (error) {
         if(transactionStarted) {
@@ -140,7 +124,8 @@ export const UpdateDAO = async (code, data) => {
         SET
             name = ?,
             description = ?,
-            is_active = ?
+            is_active = ?,
+            updated_at = NOW()
         WHERE code = ?
         AND deleted_at IS NULL
         `,

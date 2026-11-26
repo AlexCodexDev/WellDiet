@@ -6,7 +6,7 @@ interface CategoriesProps {
   code: string;
   name: string;
   description: string;
-  is_active: boolean;
+  isActive: number;
 }
 
 export const CategoriesPage: React.FC = () => {
@@ -14,12 +14,15 @@ export const CategoriesPage: React.FC = () => {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  // State untuk form tambah rule baru
+  // START: Declaration category
   const [data, setData] = useState<CategoriesProps[]>([]);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [activeStatus, setActiveStatus] = useState("active");
   const [selectedCode, setSelectedCode] = useState<string | null>(null);
+  const [lastAdded, setLastAdded] = useState<string>("");
+  const [counter, setCounter] = useState<number>(0);
+  // END: Declaration category
 
  const handleUpdateModal = (
     name: string,
@@ -42,7 +45,7 @@ export const CategoriesPage: React.FC = () => {
         }
       );
   
-      const data: CategoriesProps[] = await response.json();
+      const result = await response.json();
 
       if(!response.ok) {
         Notification(
@@ -53,8 +56,19 @@ export const CategoriesPage: React.FC = () => {
 
         return;
       }
-  
-      setData(data);
+
+      setLastAdded(new Date(result[0].created_at).toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "long",
+        day: "2-digit"
+      }));
+      setCounter(result.length);
+      setData(
+        result.map(({ is_active, ...item }: any) => ({
+          ...item,
+          isActive: is_active
+        }))
+      );
     } catch (error: any) {
       Notification(
         error.message,
@@ -277,7 +291,7 @@ export const CategoriesPage: React.FC = () => {
             <div>
               <h2 className="font-serif text-xl font-normal text-[#182B20]">Your categories</h2>
               <p className="mt-0.5 text-xs text-[#7D8A83]">
-                {data.length} category
+                {counter === 1 ? `${counter} category` : `${counter} categories`} · Last added {lastAdded}
               </p>
             </div>
           </div>
@@ -321,7 +335,7 @@ export const CategoriesPage: React.FC = () => {
                         {item.description || "-"}
                       </td>
                       <td className="py-3.5 pr-4 whitespace-nowrap">
-                        {item.is_active === 1 ?
+                        {item.isActive === 1 ?
                           <p className="bg-[#2C4C3B] py-2 px-2 text-white rounded-2xl w-20 text-center">Active</p> :
                           <p className="bg-[#E7ECE2] py-2 px-2 text-bg-[#2C4C3B] rounded-2xl w-20 text-center">In Active</p>
                         }

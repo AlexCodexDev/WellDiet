@@ -32,7 +32,7 @@ export const UpdateServices = async (code, data) => {
     }
 
     if(!activeStatus) {
-        throw new Error("Active status cannot be empty.");
+        throw new Error("Status cannot be empty.");
     }
 
     if(activeStatus == "active") {
@@ -47,7 +47,7 @@ export const UpdateServices = async (code, data) => {
 
 export const DeleteServices = async (code) => {
     if(!code) {
-        throw new Error("Code not found.");
+        throw new Error("Cannot process : code not found.");
     }
 
     await DAO.DeleteDAO(code);

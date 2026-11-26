@@ -1,8 +1,16 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import AdminLayout from "../../components/layouts/admin/AdminLayout";
+import { Notification } from "@/components/notification";
 
 type RuleStatus = "Published" | "In review" | "Draft";
 
+interface FactProps {
+  code: string;
+  name: string;
+  description: string | null;
+  questionText: string;
+  isActive: number;
+}
 interface RuleItem {
   id: string;
   title: string;
@@ -119,7 +127,22 @@ export const RulesAndFactsPage: React.FC = () => {
   const [selectedRuleId, setSelectedRuleId] = useState<string>("RUL-024");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isModalRuleOpen, setIsModalRuleOpen] = useState<boolean>(false);
+  const [isModalFactOpen, setIsModalFactOpen] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isModalDeleteOpen, setIsModalDeleteOpen] = useState<boolean>(false);
+  const [modalDeleteTitle, setModalDeleteTitle] = useState<string>("");
+
+  // START: Declaration for facts
+  const [factData, setFactData] = useState<FactProps[]>([]);
+  const [factName, setFactName] = useState<string>("");
+  const [questionText, setQuestionText] = useState<string>("");
+  const [factDescription, setFactDescription] = useState<string | null>(null);
+  const [factStatus, setFactStatus] = useState<string | null>(null);
+  const [selectedFactCode, setSelectedFactCode] = useState<string | null>(null);
+  const [factCount, setFactCount] = useState<number>(0);
+  const [factLastAdded, setFactLastAdded] = useState<string>("");
+  // END: Declaration for facts
 
   // State untuk form tambah rule baru
   const [newTitle, setNewTitle] = useState("");
@@ -158,8 +181,228 @@ export const RulesAndFactsPage: React.FC = () => {
     setNewTitle("");
     setNewIf("");
     setNewThen("");
-    setIsModalOpen(false);
+    setIsModalRuleOpen(false);
   };
+
+  // START: Fetch fact
+  const fetchFact = async () => {
+    setIsLoading(true);
+    
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/fact/fetch`
+      );
+
+      const result = await response.json();
+
+      if(!response.ok) {
+        Notification(
+          result,
+          "error",
+          false
+        );
+
+        return;
+      }
+
+      setFactLastAdded(
+        new Date(result[0].created_at).toLocaleDateString("en-US", {
+          year: "numeric",
+          month: "long",
+          day: "2-digit"
+        })
+      );
+      setFactCount(result.length);
+      setFactData(
+        result.map(({ question_text, is_active, ...item }: any) => ({
+          ...item,
+          questionText: question_text,
+          isActive: is_active
+        }))
+      );
+    } catch (error: any) {
+      Notification(
+        error.message,
+        "error",
+        false
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  }
+  // END: Fetch fact
+
+  // START: Create fact
+  const handleAddFact = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/fact/create`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          credentials: "include",
+          body: JSON.stringify({
+            name: factName,
+            question: questionText,
+            description: factDescription
+          })
+        }
+      );
+
+      const result = await response.json();
+
+      if(!response.ok) {
+        Notification(
+          result,
+          "error",
+          false
+        );
+        
+        return;
+      }
+
+      await fetchFact();
+
+      clearFact();
+      setIsModalFactOpen(false);
+
+      Notification(
+        result,
+        "success",
+        false
+      );
+    } catch (error: any) {
+      Notification(
+        error.message,
+        "error",
+        false
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  }
+  // END: Create fact
+
+  // START: Update fact
+  const handleUpdateFact = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/fact/update/${selectedFactCode}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          credentials: "include",
+          body: JSON.stringify({
+            name: factName,
+            questionText,
+            description: factDescription,
+            isActive: factStatus
+          })
+        }
+      );
+
+      const result = await response.json();
+
+      if(!response.ok) {
+        Notification(
+          result,
+          "error",
+          false
+        );
+
+        return;
+      }
+
+      await fetchFact();
+
+      clearFact();
+      setIsModalFactOpen(false);
+
+      Notification(
+        result,
+        "success",
+        false
+      );
+    } catch (error: any) {
+      Notification(
+        error.message,
+        "error",
+        false
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  } 
+  // END: Update fact
+
+  // START: Delete fact
+  const handleDeleteFact = async () => {
+    setIsLoading(true);
+    
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/fact/delete/${selectedFactCode}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          credentials: "include"
+        }
+      );
+
+      const result = await response.json();
+
+      if(!response.ok) {
+        Notification(
+          result,
+          "error",
+          false
+        );
+
+        return;
+      }
+
+      await fetchFact();
+
+      clearFact();
+      setIsModalDeleteOpen(false);
+
+      Notification(
+        result,
+        "success",
+        false
+      );
+    } catch (error: any) {
+      Notification(
+        error.message,
+        "error",
+        false
+      );
+    } finally {
+      setIsLoading(true);
+    }
+  }
+  // END: Delete fact
+
+  // START: Clear function
+  function clearFact() {
+    setFactName("");
+    setFactDescription("");
+    setQuestionText("");
+    setSelectedFactCode(null);
+  }
+  // END: Clear function
 
   const renderStatusPill = (status: RuleStatus) => {
     if (status === "Published") {
@@ -183,9 +426,24 @@ export const RulesAndFactsPage: React.FC = () => {
     );
   };
 
+  function handleUpdateModal(
+    name: string,
+    description: string,
+    question: string
+  ) {
+    setFactName(name);
+    setFactDescription(description);
+    setQuestionText(question);
+    setIsModalFactOpen(true);
+  }
+
+  useEffect(() => {
+    fetchFact();
+  }, []);
+
   return (
     <AdminLayout>
-      <div className="mx-auto max-w-[1320px] space-y-6">
+      <div className="mx-auto max-w-330 space-y-6">
         {/* Top Page Header */}
         <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
           <div>
@@ -210,7 +468,7 @@ export const RulesAndFactsPage: React.FC = () => {
 
             <button
               type="button"
-              onClick={() => setIsModalOpen(true)}
+              onClick={() => setIsModalRuleOpen(true)}
               className="inline-flex cursor-pointer items-center gap-1.5 rounded-full bg-[#2C4C3B] px-4 py-2 text-xs font-medium text-white shadow-2xs transition-colors hover:bg-[#213A2D]"
             >
               <span>+</span>
@@ -231,6 +489,158 @@ export const RulesAndFactsPage: React.FC = () => {
               <p className="mt-2.5 text-[11px] text-[#7D8A83]">{item.subtitle}</p>
             </div>
           ))}
+        </div>
+
+        {/* Middle Table Card: Your Fact */}
+        <div className="rounded-2xl border border-stone-200/90 bg-white p-6">
+          {/* Card Header */}
+          <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+            <div>
+              <h2 className="font-serif text-xl font-normal text-[#182B20]">Manage Fact</h2>
+              <p className="mt-0.5 text-xs text-[#7D8A83]">
+                {factCount === 1 ? `${factCount} fact` : `${factCount} facts`} · Last added {factLastAdded}
+              </p>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2.5">
+              <select
+                value={categoryFilter}
+                onChange={(e) => setCategoryFilter(e.target.value)}
+                aria-label="Filter by category"
+                className="cursor-pointer rounded-full border border-stone-200 bg-white px-4 py-1.5 text-xs font-medium text-[#182B20] focus:border-[#2C4C3B] focus:outline-none"
+              >
+                <option value="all">All categories</option>
+                <option value="Recipe safety">Recipe safety</option>
+                <option value="Nutrition plans">Nutrition plans</option>
+                <option value="Diagnosis">Diagnosis</option>
+                <option value="Member care">Member care</option>
+              </select>
+
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                aria-label="Filter by status"
+                className="cursor-pointer rounded-full border border-stone-200 bg-white px-4 py-1.5 text-xs font-medium text-[#182B20] focus:border-[#2C4C3B] focus:outline-none"
+              >
+                <option value="all">Filter</option>
+                <option value="Published">Active</option>
+                <option value="In review">In Active</option>
+              </select>
+              
+              <button
+                type="button"
+                onClick={() => setIsModalFactOpen(true)}
+                className="inline-flex cursor-pointer items-center gap-1.5 rounded-full bg-[#2C4C3B] px-4 py-2 text-xs font-medium text-white shadow-2xs transition-colors hover:bg-[#213A2D]"
+              >
+              <span>+</span>
+              <span>Add fact</span>
+            </button>
+            </div>
+          </div>
+
+          {/* Facts Table */}
+          <div className="mt-5 overflow-x-auto">
+            <table className="w-full border-collapse text-left">
+              <thead>
+                <tr className="border-y border-stone-200/80 text-[10px] font-semibold uppercase tracking-wider text-[#7D8A83]">
+                  <th className="py-3 pr-4 pl-2">Fact ID</th>
+                  <th className="py-3 pr-4">Name</th>
+                  <th className="py-3 pr-4">Question</th>
+                  <th className="py-3 pr-4">Description</th>
+                  <th className="py-3 pr-4">Status</th>
+                  <th className="py-3 pr-2 text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-stone-100 text-xs">
+                {factData.map((item) => (
+                  <tr
+                    key={item.code}
+                    className={`cursor-pointer transition-colors hover:bg-[#FAF9F6]`}
+                  >
+                    <td className="py-3.5 pr-4 pl-2 font-semibold whitespace-nowrap text-[#3A5446]">
+                      {item.code}
+                    </td>
+                    <td className="py-3.5 pr-4 font-semibold text-[#182B20]">{item.name}</td>
+                    <td className="py-3.5 pr-4 whitespace-nowrap font-semibold text-[#182B20]">
+                      {item.questionText}
+                    </td>
+                    <td className="py-3.5 pr-4 whitespace-nowrap font-semibold text-[#182B20]">
+                      {item.description ?? "-"}
+                    </td>
+                    <td className="py-3.5 pr-4 whitespace-nowrap">
+                      {item.isActive === 1 ?
+                          <span className="bg-[#2C4C3B] py-2 px-2 text-white rounded-2xl w-20 text-center">Active</span> :
+                          <span className="bg-[#E7ECE2] py-2 px-2 text-bg-[#2C4C3B] rounded-2xl w-20 text-center">In Active</span>
+                        }
+                    </td>
+                    <td className="py-3.5 flex gap-2 justify-end text-right whitespace-nowrap">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedFactCode(item.code);
+                          handleUpdateModal(
+                            item.name,
+                            item.description ?? "",
+                            item.questionText,
+                          );
+                        }}
+                        className="inline-flex cursor-pointer items-center gap-1 font-medium text-[#2C4C3B] hover:underline"
+                      >
+                        <span>Edit</span>
+                        <span aria-hidden="true">→</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedFactCode(item.code);
+                          setModalDeleteTitle("fact");
+                          setIsModalDeleteOpen(true);
+                        }}
+                        className="inline-flex cursor-pointer items-center gap-1 font-medium text-[#2C4C3B] hover:underline"
+                      >
+                        <span>Delete</span>
+                        <span aria-hidden="true">→</span>
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Pagination Footer */}
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-stone-100 pt-4 text-[11px] text-[#7D8A83]">
+            <span>Showing 1–{filteredRules.length} of 24 rules</span>
+            <div className="flex items-center gap-1">
+              <button type="button" className="rounded-md px-2 py-1 hover:bg-stone-100">
+                &lt;
+              </button>
+              <button
+                type="button"
+                className="rounded-md bg-[#E6EDE4] px-2.5 py-1 font-semibold text-[#2C4C3B]"
+              >
+                1
+              </button>
+              <button type="button" className="rounded-md px-2.5 py-1 hover:bg-stone-100">
+                2
+              </button>
+              <button type="button" className="rounded-md px-2.5 py-1 hover:bg-stone-100">
+                3
+              </button>
+              <button type="button" className="rounded-md px-2.5 py-1 hover:bg-stone-100">
+                4
+              </button>
+              <button type="button" className="rounded-md px-2.5 py-1 hover:bg-stone-100">
+                5
+              </button>
+              <button type="button" className="rounded-md px-2 py-1 hover:bg-stone-100">
+                &gt;
+              </button>
+            </div>
+          </div>
         </div>
 
         {/* Middle Table Card: Your Rules */}
@@ -309,7 +719,7 @@ export const RulesAndFactsPage: React.FC = () => {
                       <td className="py-3.5 pr-4 whitespace-nowrap text-[#6E7A74]">
                         {rule.updatedAt}
                       </td>
-                      <td className="py-3.5 pr-2 text-right whitespace-nowrap">
+                      <td className="py-3.5 flex gap-2 justify-end text-right whitespace-nowrap">
                         <button
                           type="button"
                           onClick={(e) => {
@@ -450,15 +860,115 @@ export const RulesAndFactsPage: React.FC = () => {
         </div>
       </div>
 
+      {/* Modal Tambah Fact Baru */}
+      {isModalFactOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4 backdrop-blur-2xs">
+          <div className="w-full max-w-md rounded-2xl border border-stone-200 bg-white p-6 shadow-lg">
+            <div className="flex items-center justify-between">
+              <h3 className="font-serif text-xl font-normal text-[#182B20]">Add new fact</h3>
+              <button
+                type="button"
+                onClick={() => setIsModalFactOpen(false)}
+                className="rounded-lg p-1 text-[#6E7A74] hover:bg-stone-100"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form
+              onSubmit={(e) => {
+                selectedFactCode !== null ?
+                  handleUpdateFact(e) :
+                  handleAddFact(e)
+
+              }}
+              className="mt-4 space-y-4"
+            >
+              <div>
+                <label className="mb-1 block text-xs font-semibold text-[#182B20]">
+                  Fact name <span className="text-[#182B20]">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={factName}
+                  onChange={(e) => setFactName(e.target.value)}
+                  placeholder="e.g., Flag high sodium meals"
+                  className="w-full rounded-xl border border-stone-200 px-3.5 py-2.5 text-xs text-[#182B20] focus:border-[#2C4C3B] focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="mb-1 block text-xs font-semibold text-[#182B20]">
+                  Question text <span className="text-[#182B20]">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={questionText}
+                  onChange={(e) => setQuestionText(e.target.value)}
+                  placeholder="e.g., Flag high sodium meals"
+                  className="w-full rounded-xl border border-stone-200 px-3.5 py-2.5 text-xs text-[#182B20] focus:border-[#2C4C3B] focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="mb-1 block text-xs font-semibold text-[#182B20]">
+                  Description (Optional)
+                </label>
+                <textarea
+                  value={factDescription ?? ""}
+                  onChange={(e) => setFactDescription(e.target.value)}
+                  placeholder="e.g., Flag high sodium meals"
+                  className="w-full rounded-xl border border-stone-200 px-3.5 py-2.5 text-xs text-[#182B20] focus:border-[#2C4C3B] focus:outline-none"
+                />
+              </div>
+
+              {selectedFactCode !== null && (
+                <div>
+                  <label className="mb-1 block text-xs font-semibold text-[#182B20]">
+                    Active Status <span className="text-[#182B20]">*</span>
+                  </label>
+                  <select
+                    value={factStatus ?? ""}
+                    onChange={(e) => setFactStatus(e.target.value)}
+                    className="w-full rounded-xl border border-stone-200 px-3.5 py-2.5 text-xs text-[#182B20] focus:border-[#2C4C3B] focus:outline-none"
+                  >
+                    <option value="active">Active</option>
+                    <option value="in_active">In Active</option>
+                  </select>
+                </div>
+              )}
+
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setIsModalFactOpen(false)}
+                  className="rounded-full border border-stone-200 px-4 py-2 text-xs font-medium text-[#5A6560] hover:bg-stone-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="rounded-full bg-[#2C4C3B] px-5 py-2 text-xs font-medium text-white hover:bg-[#213A2D]"
+                >
+                  Save draft
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* Modal Tambah Rule Baru */}
-      {isModalOpen && (
+      {isModalRuleOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4 backdrop-blur-2xs">
           <div className="w-full max-w-md rounded-2xl border border-stone-200 bg-white p-6 shadow-lg">
             <div className="flex items-center justify-between">
               <h3 className="font-serif text-xl font-normal text-[#182B20]">Add new rule</h3>
               <button
                 type="button"
-                onClick={() => setIsModalOpen(false)}
+                onClick={() => setIsModalRuleOpen(false)}
                 className="rounded-lg p-1 text-[#6E7A74] hover:bg-stone-100"
               >
                 ✕
@@ -525,7 +1035,7 @@ export const RulesAndFactsPage: React.FC = () => {
               <div className="flex justify-end gap-2 pt-2">
                 <button
                   type="button"
-                  onClick={() => setIsModalOpen(false)}
+                  onClick={() => setIsModalRuleOpen(false)}
                   className="rounded-full border border-stone-200 px-4 py-2 text-xs font-medium text-[#5A6560] hover:bg-stone-50"
                 >
                   Cancel
@@ -541,6 +1051,55 @@ export const RulesAndFactsPage: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* START: Delete Confirmation Modal */}
+      {isModalDeleteOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4 backdrop-blur-2xs">
+          <div className="w-full max-w-md rounded-2xl border border-stone-200 bg-white p-6 shadow-lg">
+            <div className="flex items-center justify-between">
+              <h3 className="font-serif text-xl font-normal text-[#182B20]">Delete Confirmation</h3>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsModalDeleteOpen(false);
+                  clearFact();
+                }}
+                className="rounded-lg p-1 text-[#6E7A74] hover:bg-stone-100 cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="flex flex-col justify-center items-center py-4">
+              <h3 className="text-2xl font-bold">Are You Sure?</h3>
+              <p>Deleted {modalDeleteTitle} cannot be retieve.</p>
+              <div className="flex gap-2 pt-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsModalDeleteOpen(false);
+                    clearFact();
+                  }}
+                  className="rounded-full border border-stone-200 px-4 py-2 text-sm font-medium text-[#5A6560] hover:bg-stone-50 cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  className="rounded-full bg-[#2C4C3B] px-5 py-2 text-sm font-medium text-white hover:bg-[#213A2D] cursor-pointer"
+                  onClick={() => {
+                    if(selectedFactCode !== null) {
+                      handleDeleteFact();
+                    }
+                  }}
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* END: Delete Confirmation Modal */}
     </AdminLayout>
   );
 };
