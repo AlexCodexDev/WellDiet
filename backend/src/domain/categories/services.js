@@ -23,7 +23,7 @@ export const UpdateServices = async (code, data) => {
     const { name, description, activeStatus } = data;
 
     if(!code) {
-        throw new Error("Category code not found.");
+        throw new Error("Cannot process : code not found.");
     }
 
     if(!name) {

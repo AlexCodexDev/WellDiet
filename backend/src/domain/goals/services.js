@@ -23,6 +23,10 @@ export const CreateServices = async (data) => {
 export const UpdateServices = async (code, data) => {
     const { name, category, isActive } = data;
 
+    if(!code) {
+        throw new Error("Cannot process : code not found.");
+    }
+
     if(!name) {
         throw new Error("Goal name cannot be empty.");
     }

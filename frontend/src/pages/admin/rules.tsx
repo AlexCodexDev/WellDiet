@@ -24,6 +24,13 @@ interface GoalProps {
   name: string;
   isActive: number;
 }
+
+interface ActionProps {
+  code: string;
+  name: string;
+  description: string;
+  isActive: number;
+}
 interface RuleItem {
   id: string;
   title: string;
@@ -148,6 +155,7 @@ export const RulesAndFactsPage: React.FC = () => {
   const [isModalRuleOpen, setIsModalRuleOpen] = useState<boolean>(false);
   const [isModalFactOpen, setIsModalFactOpen] = useState<boolean>(false);
   const [isModalGoalOpen, setIsModalGoalOpen] = useState<boolean>(false);
+  const [isModalActionOpen, setIsModalActionOpen] = useState<boolean>(false);
   const [isModalDeleteOpen, setIsModalDeleteOpen] = useState<boolean>(false);
   // END: Declaration modal open
 
@@ -173,6 +181,17 @@ export const RulesAndFactsPage: React.FC = () => {
   const [goalLatestAdded, setGoalLatestAdded] = useState<string>("");
   const [goalModalLabel, setGoalModalLabel] = useState<string>("");
   // END: Declaration for goals
+
+  // START: Declaration for actions
+  const [actionData, setActionData] = useState<ActionProps[]>([]);
+  const [actionName, setActionName] = useState<string>("");
+  const [actionDescription, setActionDescription] = useState<string | null>(null);
+  const [actionStatus, setActionStatus] = useState<string | null>(null);
+  const [selectedActionCode, setSelectedActionCode] = useState<string | null>(null);
+  const [actionCount, setActionCount] = useState<number>(0);
+  const [actionLatestAdded, setActionLatestAdded] = useState<string>("");
+  const [actionModalLabel, setActionModalLabel] = useState<string>("");
+  // END: Declaration for actions
 
   // State untuk form tambah rule baru
   const [newTitle, setNewTitle] = useState("");
@@ -744,6 +763,210 @@ export const RulesAndFactsPage: React.FC = () => {
   }
   // END: Delete goal
 
+  // START: Fetch action
+  const fetchAction = async () => {
+    setIsLoading(true);
+
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/action/fetch`
+      );
+
+      const result = await response.json();
+
+      if(!response.ok) {
+        Notification(
+          result,
+          "error",
+          false
+        );
+
+        return;
+      }
+
+      if(result.length > 0) {
+        setActionLatestAdded(
+          new Date(result[0].created_at).toLocaleDateString("en-US", {
+            year: "numeric",
+            month: "long",
+            day: "2-digit"
+          })
+        );
+      }
+      setActionCount(result.length);
+      setActionData(
+        result.map(({ is_active, ...item }: any) => ({
+          ...item,
+          isActive: is_active
+        }))
+      );
+    } catch (error: any) {
+      Notification(
+        error.message,
+        "error",
+        false
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  }
+  // END: Fetch action
+
+  // START: Create action
+  const handleAddAction = async () => {
+    setIsLoading(true);
+
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/action/create`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            name: actionName,
+            description: actionDescription
+          })
+        }
+      );
+
+      const result = await response.json();
+
+      if(!response.ok) {
+        Notification(
+          result,
+          "error",
+          false
+        );
+
+        return;
+      }
+
+      await fetchAction();
+
+      clearAction();
+      setIsModalActionOpen(false);
+
+      Notification(
+        result,
+        "success",
+        false
+      );
+    } catch (error: any) {
+      Notification(
+        error.message,
+        "error",
+        false
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  }
+  // END: Create action
+
+  // START: Update action
+  const handleUpdateAction = async () => {
+    setIsLoading(true);
+
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/action/update/${selectedActionCode}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          credentials: "include",
+          body: JSON.stringify({
+            name: actionName,
+            description: actionDescription,
+            isActive: actionStatus
+          })
+        }
+      );
+
+      const result = await response.json();
+
+      if(!response.ok) {
+        Notification(
+          result,
+          "error",
+          false
+        );
+
+        return;
+      }
+
+      await fetchAction();
+
+      clearAction();
+      setIsModalActionOpen(false);
+
+      Notification(
+        result,
+        "success",
+        false
+      );
+    } catch (error: any) {
+      Notification(
+        error.message,
+        "error",
+        false
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  }
+  // END: Update action
+
+  // START: Delete action
+  const handleDeleteAction = async () => {
+    setIsLoading(true);
+
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/action/delete/${selectedActionCode}`,
+        {
+          method: "DELETE",
+          credentials: "include"
+        }
+      );
+
+      const result = await response.json();
+
+      if(!response.ok) {
+        Notification(
+          result,
+          "error",
+          false
+        );
+
+        return;
+      }
+
+      await fetchAction();
+
+      clearAction();
+      setIsModalDeleteOpen(false);
+
+      Notification(
+        result,
+        "success",
+        false
+      );
+    } catch (error: any) {
+      Notification(
+        error.message,
+        "error",
+        false
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  }
+  // END: Delete action
+
   // START: Clear function
   function clearFact() {
     setFactName("");
@@ -758,6 +981,13 @@ export const RulesAndFactsPage: React.FC = () => {
     setGoalCategory("");
     setGoalStatus("");
     setSelectedGoalCode(null);
+  }
+
+  function clearAction() {
+    setActionName("");
+    setActionDescription("");
+    setActionStatus("");
+    setSelectedActionCode(null);
   }
   // END: Clear function
 
@@ -783,6 +1013,7 @@ export const RulesAndFactsPage: React.FC = () => {
     );
   };
 
+  // START: Update handle function
   function handleUpdateFactModal(
     name: string,
     description: string,
@@ -811,10 +1042,25 @@ export const RulesAndFactsPage: React.FC = () => {
     setIsModalGoalOpen(true);
   }
 
+  function handleUpdateActionModal(
+    name: string,
+    description: string,
+    isActive: number
+  ) {
+    const status = isActive === 0 ? "in_active" : "active";
+
+    setActionName(name);
+    setActionDescription(description);
+    setActionStatus(status);
+    setIsModalActionOpen(true);
+  }
+  // END: Update handle function
+
   useEffect(() => {
     fetchCategory();
     fetchFact();
     fetchGoal();
+    fetchAction();
   }, []);
 
   return (
@@ -882,19 +1128,6 @@ export const RulesAndFactsPage: React.FC = () => {
 
               <div className="flex flex-wrap items-center gap-2.5">
                 <select
-                  value={categoryFilter}
-                  onChange={(e) => setCategoryFilter(e.target.value)}
-                  aria-label="Filter by category"
-                  className="cursor-pointer rounded-full border border-stone-200 bg-white px-4 py-1.5 text-xs font-medium text-[#182B20] focus:border-[#2C4C3B] focus:outline-none"
-                >
-                  <option value="all">All categories</option>
-                  <option value="Recipe safety">Recipe safety</option>
-                  <option value="Nutrition plans">Nutrition plans</option>
-                  <option value="Diagnosis">Diagnosis</option>
-                  <option value="Member care">Member care</option>
-                </select>
-
-                <select
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
                   aria-label="Filter by status"
@@ -947,7 +1180,7 @@ export const RulesAndFactsPage: React.FC = () => {
                           {item.questionText}
                         </td>
                         <td className="py-3.5 pr-4 whitespace-nowrap font-semibold text-[#182B20]">
-                          {item.description ?? "-"}
+                          {item.description || "-"}
                         </td>
                         <td className="py-3.5 pr-4 whitespace-nowrap">
                           {item.isActive === 1 ?
@@ -1194,6 +1427,152 @@ export const RulesAndFactsPage: React.FC = () => {
         </div>
         {/* END: Section facts & goals */}
 
+        {/* START: Section actions */}
+        <div className="rounded-2xl border border-stone-200/90 bg-white p-6">
+          {/* Card Header */}
+          <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+            <div>
+              <h2 className="font-serif text-xl font-normal text-[#182B20]">Manage Actions</h2>
+              <p className="mt-0.5 text-xs text-[#7D8A83]">
+                {actionCount > 1 ? `${actionCount} actions` : `${actionCount} action`} {actionLatestAdded === "" || `· Last added ${actionLatestAdded}`}
+              </p>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2.5">
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                aria-label="Filter by status"
+                className="cursor-pointer rounded-full border border-stone-200 bg-white px-4 py-1.5 text-xs font-medium text-[#182B20] focus:border-[#2C4C3B] focus:outline-none"
+              >
+                <option value="all">Filter</option>
+                <option value="Published">Active</option>
+                <option value="In review">In Active</option>
+              </select>
+              
+              <button
+                type="button"
+                onClick={() => {
+                  setIsModalActionOpen(true);
+                  clearAction();
+                  setActionModalLabel("Add");
+                }}
+                className="inline-flex cursor-pointer items-center gap-1.5 rounded-full bg-[#2C4C3B] px-4 py-2 text-xs font-medium text-white shadow-2xs transition-colors hover:bg-[#213A2D]"
+              >
+              <span>+</span>
+              <span>Add action</span>
+            </button>
+            </div>
+          </div>
+
+          {/* Goals Table */}
+          <div className="mt-5 overflow-x-auto">
+            <table className="w-full border-collapse text-left">
+              <thead>
+                <tr className="border-y border-stone-200/80 text-[10px] font-semibold uppercase tracking-wider text-[#7D8A83]">
+                  <th className="py-3 pr-4 pl-2">Action Code</th>
+                  <th className="py-3 pr-4">Name</th>
+                  <th className="py-3 pr-4">Description</th>
+                  <th className="py-3 pr-4">Status</th>
+                  <th className="py-3 pr-2 text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-stone-100 text-xs">
+                {actionData.length > 0 ? (
+                  actionData.map((item) => (
+                    <tr
+                      key={item.code}
+                      className={`cursor-pointer transition-colors hover:bg-[#FAF9F6]`}
+                    >
+                      <td className="py-3.5 pr-4 pl-2 font-semibold whitespace-nowrap text-[#3A5446]">
+                        {item.code}
+                      </td>
+                      <td className="py-3.5 pr-4 font-semibold text-[#182B20]">{item.name}</td>
+                      <td className="py-3.5 pr-4 font-semibold text-[#182B20]">{item.description || "-"}</td>
+                      <td className="py-3.5 pr-4 whitespace-nowrap">
+                        {item.isActive === 1 ?
+                            <span className="bg-[#2C4C3B] py-2 px-2 text-white rounded-2xl w-20 text-center">Active</span> :
+                            <span className="bg-[#E7ECE2] py-2 px-2 text-bg-[#2C4C3B] rounded-2xl w-20 text-center">In Active</span>
+                          }
+                      </td>
+                      <td className="py-3.5 flex gap-2 justify-end text-right whitespace-nowrap">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            clearGoal();
+                            setSelectedActionCode(item.code);
+                            setActionModalLabel("Edit");
+                            handleUpdateActionModal(
+                              item.name,
+                              item.description ?? "",
+                              item.isActive
+                            )
+                          }}
+                          className="inline-flex cursor-pointer items-center gap-1 font-medium text-[#2C4C3B] hover:underline"
+                        >
+                          <span>Edit</span>
+                          <span aria-hidden="true">→</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedActionCode(item.code);
+                            setModalDeleteTitle("action");
+                            setIsModalDeleteOpen(true);
+                          }}
+                          className="inline-flex cursor-pointer items-center gap-1 font-medium text-[#2C4C3B] hover:underline"
+                        >
+                          <span>Delete</span>
+                          <span aria-hidden="true">→</span>
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={5} className="py-3.5 text-center whitespace-nowrap">No records.</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Pagination Footer */}
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-stone-100 pt-4 text-[11px] text-[#7D8A83]">
+            <span>Showing 1–{filteredRules.length} of 24 rules</span>
+            <div className="flex items-center gap-1">
+              <button type="button" className="rounded-md px-2 py-1 hover:bg-stone-100">
+                &lt;
+              </button>
+              <button
+                type="button"
+                className="rounded-md bg-[#E6EDE4] px-2.5 py-1 font-semibold text-[#2C4C3B]"
+              >
+                1
+              </button>
+              <button type="button" className="rounded-md px-2.5 py-1 hover:bg-stone-100">
+                2
+              </button>
+              <button type="button" className="rounded-md px-2.5 py-1 hover:bg-stone-100">
+                3
+              </button>
+              <button type="button" className="rounded-md px-2.5 py-1 hover:bg-stone-100">
+                4
+              </button>
+              <button type="button" className="rounded-md px-2.5 py-1 hover:bg-stone-100">
+                5
+              </button>
+              <button type="button" className="rounded-md px-2 py-1 hover:bg-stone-100">
+                &gt;
+              </button>
+            </div>
+          </div>
+        </div>
+        {/* END: Section actions */}
+
         {/* Middle Table Card: Your Rules */}
         <div className="rounded-2xl border border-stone-200/90 bg-white p-6">
           {/* Card Header */}
@@ -1416,7 +1795,7 @@ export const RulesAndFactsPage: React.FC = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4 backdrop-blur-2xs">
           <div className="w-full max-w-md rounded-2xl border border-stone-200 bg-white p-6 shadow-lg">
             <div className="flex items-center justify-between">
-              <h3 className="font-serif text-xl font-normal text-[#182B20]">{factModalLabel} new fact</h3>
+              <h3 className="font-serif text-xl font-normal text-[#182B20]">{factModalLabel.toLowerCase() === "add" ? `Add new fact` : `Edit fact`}</h3>
               <button
                 type="button"
                 onClick={() => setIsModalFactOpen(false)}
@@ -1519,7 +1898,7 @@ export const RulesAndFactsPage: React.FC = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4 backdrop-blur-2xs">
           <div className="w-full max-w-md rounded-2xl border border-stone-200 bg-white p-6 shadow-lg">
             <div className="flex items-center justify-between">
-              <h3 className="font-serif text-xl font-normal text-[#182B20]">{goalModalLabel} new goal</h3>
+              <h3 className="font-serif text-xl font-normal text-[#182B20]">{goalModalLabel.toLowerCase() === "add" ? `Add new goal` : `Edit goal`}</h3>
               <button
                 type="button"
                 onClick={() => setIsModalGoalOpen(false)}
@@ -1606,6 +1985,95 @@ export const RulesAndFactsPage: React.FC = () => {
         </div>
       )}
       {/* END: Modal fact */}
+
+      {/* START: Modal action */}
+      {isModalActionOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4 backdrop-blur-2xs">
+          <div className="w-full max-w-md rounded-2xl border border-stone-200 bg-white p-6 shadow-lg">
+            <div className="flex items-center justify-between">
+              <h3 className="font-serif text-xl font-normal text-[#182B20]">{actionModalLabel.toLowerCase() === "add" ? `Add new action` : `Edit action`}</h3>
+              <button
+                type="button"
+                onClick={() => setIsModalActionOpen(false)}
+                className="rounded-lg p-1 text-[#6E7A74] hover:bg-stone-100"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+
+                selectedActionCode !== null ?
+                  handleUpdateAction() :
+                  handleAddAction()
+
+              }}
+              className="mt-4 space-y-4"
+            >
+              <div>
+                <label className="mb-1 block text-xs font-semibold text-[#182B20]">
+                  Action name <span className="text-[#182B20]">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={actionName}
+                  onChange={(e) => setActionName(e.target.value)}
+                  placeholder="e.g., Flag high sodium meals"
+                  className="w-full rounded-xl border border-stone-200 px-3.5 py-2.5 text-xs text-[#182B20] focus:border-[#2C4C3B] focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="mb-1 block text-xs font-semibold text-[#182B20]">
+                  Description (Optional)
+                </label>
+                <textarea
+                  value={actionDescription ?? ""}
+                  onChange={(e) => setActionDescription(e.target.value)}
+                  placeholder="e.g., Flag high sodium meals"
+                  className="w-full h-20 rounded-xl border border-stone-200 px-3.5 py-2.5 text-xs text-[#182B20] focus:border-[#2C4C3B] focus:outline-none"
+                />
+              </div>
+
+              {selectedActionCode !== null && (
+                <div>
+                  <label className="mb-1 block text-xs font-semibold text-[#182B20]">
+                    Active Status <span className="text-[#182B20]">*</span>
+                  </label>
+                  <select
+                    value={actionStatus ?? ""}
+                    onChange={(e) => setActionStatus(e.target.value)}
+                    className="w-full rounded-xl border border-stone-200 px-3.5 py-2.5 text-xs text-[#182B20] focus:border-[#2C4C3B] focus:outline-none"
+                  >
+                    <option value="active">Active</option>
+                    <option value="in_active">In Active</option>
+                  </select>
+                </div>
+              )}
+
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setIsModalActionOpen(false)}
+                  className="rounded-full border border-stone-200 px-4 py-2 text-xs font-medium text-[#5A6560] hover:bg-stone-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="rounded-full bg-[#2C4C3B] px-5 py-2 text-xs font-medium text-white hover:bg-[#213A2D]"
+                > 
+                  Save draft
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+      {/* END: Modal action */}
 
       {/* Modal Tambah Rule Baru */}
       {isModalRuleOpen && (
@@ -1738,6 +2206,8 @@ export const RulesAndFactsPage: React.FC = () => {
                       handleDeleteFact();
                     } else if(modalDeleteTitle === "goal" && selectedGoalCode !== null) {
                       handleDeleteGoal();
+                    } else if(modalDeleteTitle === "action" && selectedActionCode !== null) {
+                      handleDeleteAction();
                     }
                   }}
                 >
