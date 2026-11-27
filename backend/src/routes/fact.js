@@ -1,13 +1,14 @@
 import { Router } from "express";
 import * as Controller from "../domain/facts/controller.js";
 
-const factRoute = Router();
+const factRouter = Router();
 
-factRoute.get("/fetch", Controller.FetchController);
+factRouter.get("/fetch", Controller.FetchController);
 
-factRoute.put("/update/:code", Controller.UpdateController);
+factRouter.post("/create", Controller.CreateController);
 
-factRoute.post("/create", Controller.CreateController);
-factRoute.post("/delete/:code", Controller.DeleteController);
+factRouter.put("/update/:code", Controller.UpdateController);
 
-export default factRoute;
+factRouter.delete("/delete/:code", Controller.DeleteController);
+
+export default factRouter;

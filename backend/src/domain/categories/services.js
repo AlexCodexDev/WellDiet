@@ -21,7 +21,6 @@ export const CreateServices = async (data) => {
 
 export const UpdateServices = async (code, data) => {
     const { name, description, activeStatus } = data;
-    let status = true;
 
     if(!code) {
         throw new Error("Category code not found.");
@@ -35,13 +34,7 @@ export const UpdateServices = async (code, data) => {
         throw new Error("Status cannot be empty.");
     }
 
-    if(activeStatus == "active") {
-        status = true;
-    } else {
-        status = false;
-    }
-
-    await DAO.UpdateDAO(code, { name, description, status });
+    await DAO.UpdateDAO(code, { name, description, activeStatus });
     return "Category successful updated.";
 }
 

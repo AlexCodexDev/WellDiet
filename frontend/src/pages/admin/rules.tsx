@@ -4,11 +4,24 @@ import { Notification } from "@/components/notification";
 
 type RuleStatus = "Published" | "In review" | "Draft";
 
+interface CategoryProps {
+  id: string;
+  name: string;
+}
+
 interface FactProps {
   code: string;
   name: string;
   description: string | null;
   questionText: string;
+  isActive: number;
+}
+
+interface GoalProps {
+  code: string;
+  category_id: string;
+  category_name: string;
+  name: string;
   isActive: number;
 }
 interface RuleItem {
@@ -127,11 +140,16 @@ export const RulesAndFactsPage: React.FC = () => {
   const [selectedRuleId, setSelectedRuleId] = useState<string>("RUL-024");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [modalDeleteTitle, setModalDeleteTitle] = useState<string>("");
+  const [categoryData, setCategoryData] = useState<CategoryProps[]>([]);
+
+  // START: Declaration modal open
   const [isModalRuleOpen, setIsModalRuleOpen] = useState<boolean>(false);
   const [isModalFactOpen, setIsModalFactOpen] = useState<boolean>(false);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isModalGoalOpen, setIsModalGoalOpen] = useState<boolean>(false);
   const [isModalDeleteOpen, setIsModalDeleteOpen] = useState<boolean>(false);
-  const [modalDeleteTitle, setModalDeleteTitle] = useState<string>("");
+  // END: Declaration modal open
 
   // START: Declaration for facts
   const [factData, setFactData] = useState<FactProps[]>([]);
@@ -142,7 +160,19 @@ export const RulesAndFactsPage: React.FC = () => {
   const [selectedFactCode, setSelectedFactCode] = useState<string | null>(null);
   const [factCount, setFactCount] = useState<number>(0);
   const [factLastAdded, setFactLastAdded] = useState<string>("");
+  const [factModalLabel, setFactModalLabel] = useState<string>("");
   // END: Declaration for facts
+  
+  // START: Declaration for goals
+  const [goalData, setGoalData] = useState<GoalProps[]>([]);
+  const [goalName, setGoalName] = useState<string>("");
+  const [goalCategory, setGoalCategory] = useState<string>("");
+  const [goalStatus, setGoalStatus] = useState<string | null>(null);
+  const [selectedGoalCode, setSelectedGoalCode] = useState<string | null>(null);
+  const [goalCount, setGoalCount] = useState<number>(0);
+  const [goalLatestAdded, setGoalLatestAdded] = useState<string>("");
+  const [goalModalLabel, setGoalModalLabel] = useState<string>("");
+  // END: Declaration for goals
 
   // State untuk form tambah rule baru
   const [newTitle, setNewTitle] = useState("");
@@ -184,6 +214,36 @@ export const RulesAndFactsPage: React.FC = () => {
     setIsModalRuleOpen(false);
   };
 
+  // START: Fetch category
+  const fetchCategory = async () => {
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/category/fetch`
+      );
+
+      const result = await response.json();
+
+      if(!response.ok) {
+        Notification(
+          result,
+          "error",
+          false
+        );
+
+        return;
+      }
+      
+      setCategoryData(result);
+    } catch (error: any) {
+      Notification(
+        error.message,
+        "error",
+        false
+      );
+    }
+  }
+  // END: Fetch category
+
   // START: Fetch fact
   const fetchFact = async () => {
     setIsLoading(true);
@@ -205,13 +265,16 @@ export const RulesAndFactsPage: React.FC = () => {
         return;
       }
 
-      setFactLastAdded(
-        new Date(result[0].created_at).toLocaleDateString("en-US", {
-          year: "numeric",
-          month: "long",
-          day: "2-digit"
-        })
-      );
+      if(result.length > 0) {
+        setFactLastAdded(
+          new Date(result[0].created_at).toLocaleDateString("en-US", {
+            year: "numeric",
+            month: "long",
+            day: "2-digit"
+          })
+        );
+      }
+
       setFactCount(result.length);
       setFactData(
         result.map(({ question_text, is_active, ...item }: any) => ({
@@ -233,9 +296,28 @@ export const RulesAndFactsPage: React.FC = () => {
   // END: Fetch fact
 
   // START: Create fact
-  const handleAddFact = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleAddFact = async () => {
     setIsLoading(true);
+
+    if(!factName) {
+      Notification(
+        "Fact name cannot be empty.",
+        "warning",
+        false
+      );
+
+      return;
+    }
+
+    if(!questionText) {
+      Notification(
+        "Question cannot be empty.",
+        "warning",
+        false
+      );
+
+      return;
+    }
 
     try {
       const response = await fetch(
@@ -289,9 +371,28 @@ export const RulesAndFactsPage: React.FC = () => {
   // END: Create fact
 
   // START: Update fact
-  const handleUpdateFact = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleUpdateFact = async () => {
     setIsLoading(true);
+
+    if(!factName) {
+      Notification(
+        "Fact name cannot be empty.",
+        "warning",
+        false
+      );
+
+      return;
+    }
+
+    if(!questionText) {
+      Notification(
+        "Question cannot be empty.",
+        "warning",
+        false
+      );
+
+      return;
+    }
 
     try {
       const response = await fetch(
@@ -353,7 +454,7 @@ export const RulesAndFactsPage: React.FC = () => {
       const response = await fetch(
         `${import.meta.env.VITE_API_URL}/fact/delete/${selectedFactCode}`,
         {
-          method: "POST",
+          method: "DELETE",
           headers: {
             "Content-Type": "application/json"
           },
@@ -395,12 +496,268 @@ export const RulesAndFactsPage: React.FC = () => {
   }
   // END: Delete fact
 
+  // START: Fetch goal
+  const fetchGoal = async () => {
+    setIsLoading(true);
+    
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/goal/fetch`
+      );
+
+      const result = await response.json();
+
+      if(!response.ok) {
+        Notification(
+          result,
+          "error",
+          false
+        );
+
+        return;
+      }
+
+      if(result.length > 0) {
+        setGoalLatestAdded(
+          new Date(result[0].created_at).toLocaleDateString("en-US", {
+            year: "numeric",
+            month: "long",
+            day: "2-digit"
+          })
+        )
+      }
+
+      setGoalCount(result.length);
+      setGoalData(
+        result.map(({is_active, ...item}: any) => ({
+          ...item,
+          isActive: is_active
+        }))
+      );
+    } catch (error: any) {
+      Notification(
+        error.message,
+        "error",
+        false
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  }
+  // END: Fetch goal
+
+  // START: Create goal
+  const handleAddGoal = async () => {
+    setIsLoading(true);
+    
+    if(!goalName) {
+      Notification(
+        "Goal name cannot be empty.",
+        "warning",
+        false
+      );
+      
+      return;
+    }
+
+    if(!goalCategory) {
+      Notification(
+        "Goal category cannot be empty.",
+        "warning",
+        false
+      );
+      
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/goal/create`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          credentials: "include",
+          body: JSON.stringify({
+            name: goalName,
+            category: goalCategory
+          })
+        }
+      );
+
+      const result = await response.json();
+
+      if(!response.ok) {
+        Notification(
+          result,
+          "error",
+          false
+        );
+
+        return;
+      }
+
+      await fetchGoal();
+
+      clearGoal();
+      setIsModalGoalOpen(false);
+
+      Notification(
+        result,
+        "success",
+        false
+      );
+    } catch (error: any) {
+      Notification(
+        error.message,
+        "error",
+        false
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  }
+  // END: Create goal
+
+  // START: Update goal
+  const handleUpdateGoal = async () => {
+    setIsLoading(true);
+
+    if(!goalName) {
+      Notification(
+        "Goal name cannot be empty.",
+        "warning",
+        false
+      );
+      
+      return;
+    }
+
+    if(!goalCategory) {
+      Notification(
+        "Goal category cannot be empty.",
+        "warning",
+        false
+      );
+      
+      return;
+    }
+    
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/goal/update/${selectedGoalCode}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            name: goalName,
+            category: goalCategory,
+            isActive: goalStatus
+          })
+        }
+      );
+
+      const result = await response.json();
+
+      if(!response.ok) {
+        Notification(
+          result,
+          "error",
+          false
+        );
+
+        return;
+      }
+
+      await fetchGoal();
+
+      clearGoal();
+      setIsModalGoalOpen(false);
+
+      Notification(
+        result,
+        "success",
+        false
+      );
+    } catch (error: any) {
+      Notification(
+        error.message,
+        "error",
+        false
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  }
+  // END: Update goal
+
+  // START: Delete goal
+  const handleDeleteGoal = async () => {
+    setIsLoading(true);
+    
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/goal/delete/${selectedGoalCode}`,
+        {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          credentials: "include"
+        }
+      );
+
+      const result = await response.json();
+
+      if(!response.ok) {
+        Notification(
+          result,
+          "error",
+          false
+        );
+
+        return;
+      }
+
+      await fetchGoal();
+
+      setIsModalDeleteOpen(false);
+      setSelectedGoalCode(null);
+
+      Notification(
+        result,
+        "success",
+        false
+      );
+    } catch (error: any) {
+      Notification(
+        error.message,
+        "error",
+        false
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  }
+  // END: Delete goal
+
   // START: Clear function
   function clearFact() {
     setFactName("");
     setFactDescription("");
     setQuestionText("");
+    setFactStatus("");
     setSelectedFactCode(null);
+  }
+
+  function clearGoal() {
+    setGoalName("");
+    setGoalCategory("");
+    setGoalStatus("");
+    setSelectedGoalCode(null);
   }
   // END: Clear function
 
@@ -426,19 +783,38 @@ export const RulesAndFactsPage: React.FC = () => {
     );
   };
 
-  function handleUpdateModal(
+  function handleUpdateFactModal(
     name: string,
     description: string,
-    question: string
+    question: string,
+    isActive: number
   ) {
+    const status = isActive === 0 ? "in_active" : "active";
+
     setFactName(name);
     setFactDescription(description);
     setQuestionText(question);
+    setFactStatus(status);
     setIsModalFactOpen(true);
   }
 
+  function handleUpdateGoalModal(
+    name: string,
+    category: string,
+    isActive: number
+  ) {
+    const status = isActive === 0 ? "in_active" : "active";
+
+    setGoalName(name);
+    setGoalCategory(category);
+    setGoalStatus(status);
+    setIsModalGoalOpen(true);
+  }
+
   useEffect(() => {
+    fetchCategory();
     fetchFact();
+    fetchGoal();
   }, []);
 
   return (
@@ -491,157 +867,332 @@ export const RulesAndFactsPage: React.FC = () => {
           ))}
         </div>
 
-        {/* Middle Table Card: Your Fact */}
-        <div className="rounded-2xl border border-stone-200/90 bg-white p-6">
-          {/* Card Header */}
-          <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
-            <div>
-              <h2 className="font-serif text-xl font-normal text-[#182B20]">Manage Fact</h2>
-              <p className="mt-0.5 text-xs text-[#7D8A83]">
-                {factCount === 1 ? `${factCount} fact` : `${factCount} facts`} · Last added {factLastAdded}
-              </p>
+        {/* START: Section facts & goals */}
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+          {/* START: Section facts */}
+          <div className="rounded-2xl border border-stone-200/90 bg-white p-6">
+            {/* Card Header */}
+            <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+              <div>
+                <h2 className="font-serif text-xl font-normal text-[#182B20]">Manage Facts</h2>
+                <p className="mt-0.5 text-xs text-[#7D8A83]">
+                  {factCount > 1 ? `${factCount} facts` : `${factCount} fact`} {factLastAdded === "" || `· Last added ${factLastAdded}`}
+                </p>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2.5">
+                <select
+                  value={categoryFilter}
+                  onChange={(e) => setCategoryFilter(e.target.value)}
+                  aria-label="Filter by category"
+                  className="cursor-pointer rounded-full border border-stone-200 bg-white px-4 py-1.5 text-xs font-medium text-[#182B20] focus:border-[#2C4C3B] focus:outline-none"
+                >
+                  <option value="all">All categories</option>
+                  <option value="Recipe safety">Recipe safety</option>
+                  <option value="Nutrition plans">Nutrition plans</option>
+                  <option value="Diagnosis">Diagnosis</option>
+                  <option value="Member care">Member care</option>
+                </select>
+
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  aria-label="Filter by status"
+                  className="cursor-pointer rounded-full border border-stone-200 bg-white px-4 py-1.5 text-xs font-medium text-[#182B20] focus:border-[#2C4C3B] focus:outline-none"
+                >
+                  <option value="all">Filter</option>
+                  <option value="Published">Active</option>
+                  <option value="In review">In Active</option>
+                </select>
+                
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsModalFactOpen(true);
+                    setFactModalLabel("Add");
+                  }}
+                  className="inline-flex cursor-pointer items-center gap-1.5 rounded-full bg-[#2C4C3B] px-4 py-2 text-xs font-medium text-white shadow-2xs transition-colors hover:bg-[#213A2D]"
+                >
+                <span>+</span>
+                <span>Add fact</span>
+              </button>
+              </div>
             </div>
 
-            <div className="flex flex-wrap items-center gap-2.5">
-              <select
-                value={categoryFilter}
-                onChange={(e) => setCategoryFilter(e.target.value)}
-                aria-label="Filter by category"
-                className="cursor-pointer rounded-full border border-stone-200 bg-white px-4 py-1.5 text-xs font-medium text-[#182B20] focus:border-[#2C4C3B] focus:outline-none"
-              >
-                <option value="all">All categories</option>
-                <option value="Recipe safety">Recipe safety</option>
-                <option value="Nutrition plans">Nutrition plans</option>
-                <option value="Diagnosis">Diagnosis</option>
-                <option value="Member care">Member care</option>
-              </select>
-
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                aria-label="Filter by status"
-                className="cursor-pointer rounded-full border border-stone-200 bg-white px-4 py-1.5 text-xs font-medium text-[#182B20] focus:border-[#2C4C3B] focus:outline-none"
-              >
-                <option value="all">Filter</option>
-                <option value="Published">Active</option>
-                <option value="In review">In Active</option>
-              </select>
-              
-              <button
-                type="button"
-                onClick={() => setIsModalFactOpen(true)}
-                className="inline-flex cursor-pointer items-center gap-1.5 rounded-full bg-[#2C4C3B] px-4 py-2 text-xs font-medium text-white shadow-2xs transition-colors hover:bg-[#213A2D]"
-              >
-              <span>+</span>
-              <span>Add fact</span>
-            </button>
-            </div>
-          </div>
-
-          {/* Facts Table */}
-          <div className="mt-5 overflow-x-auto">
-            <table className="w-full border-collapse text-left">
-              <thead>
-                <tr className="border-y border-stone-200/80 text-[10px] font-semibold uppercase tracking-wider text-[#7D8A83]">
-                  <th className="py-3 pr-4 pl-2">Fact ID</th>
-                  <th className="py-3 pr-4">Name</th>
-                  <th className="py-3 pr-4">Question</th>
-                  <th className="py-3 pr-4">Description</th>
-                  <th className="py-3 pr-4">Status</th>
-                  <th className="py-3 pr-2 text-right">Action</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-stone-100 text-xs">
-                {factData.map((item) => (
-                  <tr
-                    key={item.code}
-                    className={`cursor-pointer transition-colors hover:bg-[#FAF9F6]`}
-                  >
-                    <td className="py-3.5 pr-4 pl-2 font-semibold whitespace-nowrap text-[#3A5446]">
-                      {item.code}
-                    </td>
-                    <td className="py-3.5 pr-4 font-semibold text-[#182B20]">{item.name}</td>
-                    <td className="py-3.5 pr-4 whitespace-nowrap font-semibold text-[#182B20]">
-                      {item.questionText}
-                    </td>
-                    <td className="py-3.5 pr-4 whitespace-nowrap font-semibold text-[#182B20]">
-                      {item.description ?? "-"}
-                    </td>
-                    <td className="py-3.5 pr-4 whitespace-nowrap">
-                      {item.isActive === 1 ?
-                          <span className="bg-[#2C4C3B] py-2 px-2 text-white rounded-2xl w-20 text-center">Active</span> :
-                          <span className="bg-[#E7ECE2] py-2 px-2 text-bg-[#2C4C3B] rounded-2xl w-20 text-center">In Active</span>
-                        }
-                    </td>
-                    <td className="py-3.5 flex gap-2 justify-end text-right whitespace-nowrap">
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedFactCode(item.code);
-                          handleUpdateModal(
-                            item.name,
-                            item.description ?? "",
-                            item.questionText,
-                          );
-                        }}
-                        className="inline-flex cursor-pointer items-center gap-1 font-medium text-[#2C4C3B] hover:underline"
-                      >
-                        <span>Edit</span>
-                        <span aria-hidden="true">→</span>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedFactCode(item.code);
-                          setModalDeleteTitle("fact");
-                          setIsModalDeleteOpen(true);
-                        }}
-                        className="inline-flex cursor-pointer items-center gap-1 font-medium text-[#2C4C3B] hover:underline"
-                      >
-                        <span>Delete</span>
-                        <span aria-hidden="true">→</span>
-                      </button>
-                    </td>
+            {/* Facts Table */}
+            <div className="mt-5 overflow-x-auto">
+              <table className="w-full border-collapse text-left">
+                <thead>
+                  <tr className="border-y border-stone-200/80 text-[10px] font-semibold uppercase tracking-wider text-[#7D8A83]">
+                    <th className="py-3 pr-4 pl-2">Fact ID</th>
+                    <th className="py-3 pr-4">Name</th>
+                    <th className="py-3 pr-4">Question</th>
+                    <th className="py-3 pr-4">Description</th>
+                    <th className="py-3 pr-4">Status</th>
+                    <th className="py-3 pr-2 text-right">Action</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="divide-y divide-stone-100 text-xs">
+                  {factData.length > 0 ? (
+                    factData.map((item) => (
+                      <tr
+                        key={item.code}
+                        className={`cursor-pointer transition-colors hover:bg-[#FAF9F6]`}
+                      >
+                        <td className="py-3.5 pr-4 pl-2 font-semibold whitespace-nowrap text-[#3A5446]">
+                          {item.code}
+                        </td>
+                        <td className="py-3.5 pr-4 font-semibold text-[#182B20]">{item.name}</td>
+                        <td className="py-3.5 pr-4 whitespace-nowrap font-semibold text-[#182B20]">
+                          {item.questionText}
+                        </td>
+                        <td className="py-3.5 pr-4 whitespace-nowrap font-semibold text-[#182B20]">
+                          {item.description ?? "-"}
+                        </td>
+                        <td className="py-3.5 pr-4 whitespace-nowrap">
+                          {item.isActive === 1 ?
+                              <span className="bg-[#2C4C3B] py-2 px-2 text-white rounded-2xl w-20 text-center">Active</span> :
+                              <span className="bg-[#E7ECE2] py-2 px-2 text-bg-[#2C4C3B] rounded-2xl w-20 text-center">In Active</span>
+                            }
+                        </td>
+                        <td className="py-3.5 flex gap-2 justify-end text-right whitespace-nowrap">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedFactCode(item.code);
+                              setFactModalLabel("Edit");
+                              handleUpdateFactModal(
+                                item.name,
+                                item.description ?? "",
+                                item.questionText,
+                                item.isActive
+                              );
+                            }}
+                            className="inline-flex cursor-pointer items-center gap-1 font-medium text-[#2C4C3B] hover:underline"
+                          >
+                            <span>Edit</span>
+                            <span aria-hidden="true">→</span>
+                          </button>
 
-          {/* Pagination Footer */}
-          <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-stone-100 pt-4 text-[11px] text-[#7D8A83]">
-            <span>Showing 1–{filteredRules.length} of 24 rules</span>
-            <div className="flex items-center gap-1">
-              <button type="button" className="rounded-md px-2 py-1 hover:bg-stone-100">
-                &lt;
-              </button>
-              <button
-                type="button"
-                className="rounded-md bg-[#E6EDE4] px-2.5 py-1 font-semibold text-[#2C4C3B]"
-              >
-                1
-              </button>
-              <button type="button" className="rounded-md px-2.5 py-1 hover:bg-stone-100">
-                2
-              </button>
-              <button type="button" className="rounded-md px-2.5 py-1 hover:bg-stone-100">
-                3
-              </button>
-              <button type="button" className="rounded-md px-2.5 py-1 hover:bg-stone-100">
-                4
-              </button>
-              <button type="button" className="rounded-md px-2.5 py-1 hover:bg-stone-100">
-                5
-              </button>
-              <button type="button" className="rounded-md px-2 py-1 hover:bg-stone-100">
-                &gt;
-              </button>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedFactCode(item.code);
+                              setModalDeleteTitle("fact");
+                              setIsModalDeleteOpen(true);
+                            }}
+                            className="inline-flex cursor-pointer items-center gap-1 font-medium text-[#2C4C3B] hover:underline"
+                          >
+                            <span>Delete</span>
+                            <span aria-hidden="true">→</span>
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={6} className="py-3.5 text-center whitespace-nowrap">No Records.</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Pagination Footer */}
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-stone-100 pt-4 text-[11px] text-[#7D8A83]">
+              <span>Showing 1–{filteredRules.length} of 24 rules</span>
+              <div className="flex items-center gap-1">
+                <button type="button" className="rounded-md px-2 py-1 hover:bg-stone-100">
+                  &lt;
+                </button>
+                <button
+                  type="button"
+                  className="rounded-md bg-[#E6EDE4] px-2.5 py-1 font-semibold text-[#2C4C3B]"
+                >
+                  1
+                </button>
+                <button type="button" className="rounded-md px-2.5 py-1 hover:bg-stone-100">
+                  2
+                </button>
+                <button type="button" className="rounded-md px-2.5 py-1 hover:bg-stone-100">
+                  3
+                </button>
+                <button type="button" className="rounded-md px-2.5 py-1 hover:bg-stone-100">
+                  4
+                </button>
+                <button type="button" className="rounded-md px-2.5 py-1 hover:bg-stone-100">
+                  5
+                </button>
+                <button type="button" className="rounded-md px-2 py-1 hover:bg-stone-100">
+                  &gt;
+                </button>
+              </div>
             </div>
           </div>
+          {/* END: Section facts */}
+
+          {/* START: Section goals */}
+          <div className="rounded-2xl border border-stone-200/90 bg-white p-6">
+            {/* Card Header */}
+            <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+              <div>
+                <h2 className="font-serif text-xl font-normal text-[#182B20]">Manage Goals</h2>
+                <p className="mt-0.5 text-xs text-[#7D8A83]">
+                  {goalCount > 1 ? `${goalCount} goals` : `${goalCount} goal`} {goalLatestAdded === "" || `· Last added ${goalLatestAdded}`}
+                </p>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2.5">
+                <select
+                  value={categoryFilter}
+                  onChange={(e) => setCategoryFilter(e.target.value)}
+                  aria-label="Filter by category"
+                  className="cursor-pointer rounded-full border border-stone-200 bg-white px-4 py-1.5 text-xs font-medium text-[#182B20] focus:border-[#2C4C3B] focus:outline-none"
+                >
+                  <option value="all">All categories</option>
+                  <option value="Recipe safety">Recipe safety</option>
+                  <option value="Nutrition plans">Nutrition plans</option>
+                  <option value="Diagnosis">Diagnosis</option>
+                  <option value="Member care">Member care</option>
+                </select>
+
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  aria-label="Filter by status"
+                  className="cursor-pointer rounded-full border border-stone-200 bg-white px-4 py-1.5 text-xs font-medium text-[#182B20] focus:border-[#2C4C3B] focus:outline-none"
+                >
+                  <option value="all">Filter</option>
+                  <option value="Published">Active</option>
+                  <option value="In review">In Active</option>
+                </select>
+                
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsModalGoalOpen(true);
+                    clearGoal();
+                    setGoalModalLabel("Add");
+                  }}
+                  className="inline-flex cursor-pointer items-center gap-1.5 rounded-full bg-[#2C4C3B] px-4 py-2 text-xs font-medium text-white shadow-2xs transition-colors hover:bg-[#213A2D]"
+                >
+                <span>+</span>
+                <span>Add goal</span>
+              </button>
+              </div>
+            </div>
+
+            {/* Goals Table */}
+            <div className="mt-5 overflow-x-auto">
+              <table className="w-full border-collapse text-left">
+                <thead>
+                  <tr className="border-y border-stone-200/80 text-[10px] font-semibold uppercase tracking-wider text-[#7D8A83]">
+                    <th className="py-3 pr-4 pl-2">Goal Code</th>
+                    <th className="py-3 pr-4 pl-2">Category</th>
+                    <th className="py-3 pr-4">Name</th>
+                    <th className="py-3 pr-4">Status</th>
+                    <th className="py-3 pr-2 text-right">Action</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-stone-100 text-xs">
+                  {goalData.length > 0 ? (
+                    goalData.map((item) => (
+                      <tr
+                        key={item.code}
+                        className={`cursor-pointer transition-colors hover:bg-[#FAF9F6]`}
+                      >
+                        <td className="py-3.5 pr-4 pl-2 font-semibold whitespace-nowrap text-[#3A5446]">
+                          {item.code}
+                        </td>
+                        <td className="py-3.5 pr-4 font-semibold text-[#182B20]">{item.category_name}</td>
+                        <td className="py-3.5 pr-4 font-semibold text-[#182B20]">{item.name}</td>
+                        <td className="py-3.5 pr-4 whitespace-nowrap">
+                          {item.isActive === 1 ?
+                              <span className="bg-[#2C4C3B] py-2 px-2 text-white rounded-2xl w-20 text-center">Active</span> :
+                              <span className="bg-[#E7ECE2] py-2 px-2 text-bg-[#2C4C3B] rounded-2xl w-20 text-center">In Active</span>
+                            }
+                        </td>
+                        <td className="py-3.5 flex gap-2 justify-end text-right whitespace-nowrap">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              clearGoal();
+                              setSelectedGoalCode(item.code);
+                              setGoalModalLabel("Edit");
+                              handleUpdateGoalModal(
+                                item.name,
+                                item.category_id,
+                                item.isActive
+                              )
+                            }}
+                            className="inline-flex cursor-pointer items-center gap-1 font-medium text-[#2C4C3B] hover:underline"
+                          >
+                            <span>Edit</span>
+                            <span aria-hidden="true">→</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedGoalCode(item.code);
+                              setModalDeleteTitle("goal");
+                              setIsModalDeleteOpen(true);
+                            }}
+                            className="inline-flex cursor-pointer items-center gap-1 font-medium text-[#2C4C3B] hover:underline"
+                          >
+                            <span>Delete</span>
+                            <span aria-hidden="true">→</span>
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={5} className="py-3.5 text-center whitespace-nowrap">No records.</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Pagination Footer */}
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-stone-100 pt-4 text-[11px] text-[#7D8A83]">
+              <span>Showing 1–{filteredRules.length} of 24 rules</span>
+              <div className="flex items-center gap-1">
+                <button type="button" className="rounded-md px-2 py-1 hover:bg-stone-100">
+                  &lt;
+                </button>
+                <button
+                  type="button"
+                  className="rounded-md bg-[#E6EDE4] px-2.5 py-1 font-semibold text-[#2C4C3B]"
+                >
+                  1
+                </button>
+                <button type="button" className="rounded-md px-2.5 py-1 hover:bg-stone-100">
+                  2
+                </button>
+                <button type="button" className="rounded-md px-2.5 py-1 hover:bg-stone-100">
+                  3
+                </button>
+                <button type="button" className="rounded-md px-2.5 py-1 hover:bg-stone-100">
+                  4
+                </button>
+                <button type="button" className="rounded-md px-2.5 py-1 hover:bg-stone-100">
+                  5
+                </button>
+                <button type="button" className="rounded-md px-2 py-1 hover:bg-stone-100">
+                  &gt;
+                </button>
+              </div>
+            </div>
+          </div>
+          {/* END: Section goals */}
         </div>
+        {/* END: Section facts & goals */}
 
         {/* Middle Table Card: Your Rules */}
         <div className="rounded-2xl border border-stone-200/90 bg-white p-6">
@@ -860,12 +1411,12 @@ export const RulesAndFactsPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Modal Tambah Fact Baru */}
+      {/* START: Modal fact */}
       {isModalFactOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4 backdrop-blur-2xs">
           <div className="w-full max-w-md rounded-2xl border border-stone-200 bg-white p-6 shadow-lg">
             <div className="flex items-center justify-between">
-              <h3 className="font-serif text-xl font-normal text-[#182B20]">Add new fact</h3>
+              <h3 className="font-serif text-xl font-normal text-[#182B20]">{factModalLabel} new fact</h3>
               <button
                 type="button"
                 onClick={() => setIsModalFactOpen(false)}
@@ -877,9 +1428,11 @@ export const RulesAndFactsPage: React.FC = () => {
 
             <form
               onSubmit={(e) => {
+                e.preventDefault();
+
                 selectedFactCode !== null ?
-                  handleUpdateFact(e) :
-                  handleAddFact(e)
+                  handleUpdateFact() :
+                  handleAddFact()
 
               }}
               className="mt-4 space-y-4"
@@ -900,7 +1453,7 @@ export const RulesAndFactsPage: React.FC = () => {
 
               <div>
                 <label className="mb-1 block text-xs font-semibold text-[#182B20]">
-                  Question text <span className="text-[#182B20]">*</span>
+                  Question <span className="text-[#182B20]">*</span>
                 </label>
                 <input
                   type="text"
@@ -920,7 +1473,7 @@ export const RulesAndFactsPage: React.FC = () => {
                   value={factDescription ?? ""}
                   onChange={(e) => setFactDescription(e.target.value)}
                   placeholder="e.g., Flag high sodium meals"
-                  className="w-full rounded-xl border border-stone-200 px-3.5 py-2.5 text-xs text-[#182B20] focus:border-[#2C4C3B] focus:outline-none"
+                  className="w-full h-20 rounded-xl border border-stone-200 px-3.5 py-2.5 text-xs text-[#182B20] focus:border-[#2C4C3B] focus:outline-none"
                 />
               </div>
 
@@ -951,6 +1504,99 @@ export const RulesAndFactsPage: React.FC = () => {
                 <button
                   type="submit"
                   className="rounded-full bg-[#2C4C3B] px-5 py-2 text-xs font-medium text-white hover:bg-[#213A2D]"
+                > 
+                  Save draft
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+      {/* END: Modal fact */}
+
+      {/* START: Modal goal */}
+      {isModalGoalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4 backdrop-blur-2xs">
+          <div className="w-full max-w-md rounded-2xl border border-stone-200 bg-white p-6 shadow-lg">
+            <div className="flex items-center justify-between">
+              <h3 className="font-serif text-xl font-normal text-[#182B20]">{goalModalLabel} new goal</h3>
+              <button
+                type="button"
+                onClick={() => setIsModalGoalOpen(false)}
+                className="rounded-lg p-1 text-[#6E7A74] hover:bg-stone-100"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+
+                selectedGoalCode !== null ?
+                  handleUpdateGoal() :
+                  handleAddGoal()
+
+              }}
+              className="mt-4 space-y-4"
+            >
+              <div>
+                <label className="mb-1 block text-xs font-semibold text-[#182B20]">
+                  Goal name <span className="text-[#182B20]">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={goalName}
+                  onChange={(e) => setGoalName(e.target.value)}
+                  placeholder="e.g., Flag high sodium meals"
+                  className="w-full rounded-xl border border-stone-200 px-3.5 py-2.5 text-xs text-[#182B20] focus:border-[#2C4C3B] focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="mb-1 block text-xs font-semibold text-[#182B20]">
+                  Category <span className="text-[#182B20]">*</span>
+                </label>
+                <select
+                  value={goalCategory}
+                  onChange={(e) => setGoalCategory(e.target.value)}
+                  className="w-full rounded-xl border border-stone-200 px-3.5 py-2.5 text-xs text-[#182B20] focus:border-[#2C4C3B] focus:outline-none"
+                >
+                  <option value="">Choose category</option>
+                  {categoryData.map((item: any) => (
+                    <option key={item.id} value={item.id}>{item.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              {selectedGoalCode !== null && (
+                <div>
+                  <label className="mb-1 block text-xs font-semibold text-[#182B20]">
+                    Active Status <span className="text-[#182B20]">*</span>
+                  </label>
+                  <select
+                    value={goalStatus ?? ""}
+                    onChange={(e) => setGoalStatus(e.target.value)}
+                    className="w-full rounded-xl border border-stone-200 px-3.5 py-2.5 text-xs text-[#182B20] focus:border-[#2C4C3B] focus:outline-none"
+                  >
+                    <option value="active">Active</option>
+                    <option value="in_active">In Active</option>
+                  </select>
+                </div>
+              )}
+
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setIsModalGoalOpen(false)}
+                  className="rounded-full border border-stone-200 px-4 py-2 text-xs font-medium text-[#5A6560] hover:bg-stone-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="rounded-full bg-[#2C4C3B] px-5 py-2 text-xs font-medium text-white hover:bg-[#213A2D]"
                 >
                   Save draft
                 </button>
@@ -959,6 +1605,7 @@ export const RulesAndFactsPage: React.FC = () => {
           </div>
         </div>
       )}
+      {/* END: Modal fact */}
 
       {/* Modal Tambah Rule Baru */}
       {isModalRuleOpen && (
@@ -1087,8 +1734,10 @@ export const RulesAndFactsPage: React.FC = () => {
                   type="button"
                   className="rounded-full bg-[#2C4C3B] px-5 py-2 text-sm font-medium text-white hover:bg-[#213A2D] cursor-pointer"
                   onClick={() => {
-                    if(selectedFactCode !== null) {
+                    if(modalDeleteTitle === "fact" && selectedFactCode !== null) {
                       handleDeleteFact();
+                    } else if(modalDeleteTitle === "goal" && selectedGoalCode !== null) {
+                      handleDeleteGoal();
                     }
                   }}
                 >

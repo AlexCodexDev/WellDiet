@@ -119,7 +119,7 @@ export const UpdateDAO = async (code, data) => {
     const name = data.name;
     const description = data.description ?? null;
     const questionText = data.questionText;
-    const isActive = data.isActive === 1 ? true : false;
+    const isActive = data.isActive === "active" ? true : false;
 
     const [result] = await db.execute(
         `

@@ -18,7 +18,7 @@ export const CategoriesPage: React.FC = () => {
   const [data, setData] = useState<CategoriesProps[]>([]);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
-  const [activeStatus, setActiveStatus] = useState("active");
+  const [activeStatus, setActiveStatus] = useState<string | null>(null);
   const [selectedCode, setSelectedCode] = useState<string | null>(null);
   const [lastAdded, setLastAdded] = useState<string>("");
   const [counter, setCounter] = useState<number>(0);
@@ -26,11 +26,15 @@ export const CategoriesPage: React.FC = () => {
 
  const handleUpdateModal = (
     name: string,
-    description: string
+    description: string,
+    isActive: number
   ) => {
+    const status = isActive === 1 ? "active" : "in_active";
+    
     setIsModalOpen(true);
     setName(name);
     setDescription(description);
+    setActiveStatus(status);
  }
 
   // START: Fetch Data
@@ -85,6 +89,16 @@ export const CategoriesPage: React.FC = () => {
   const handleAddCategory = async () => {
     setIsLoading(true);
 
+    if(!name) {
+      Notification(
+        "Category name cannot be empty.",
+        "warning",
+        false
+      );
+
+      return;
+    }
+
     try {
       const response = await fetch(
         `${import.meta.env.VITE_API_URL}/category/create`,
@@ -114,9 +128,7 @@ export const CategoriesPage: React.FC = () => {
 
       await fetchCategory();
   
-      setName("");
-      setDescription("");
-      setSelectedCode(null);
+      onClear();
       setIsModalOpen(false);
   
       Notification(
@@ -139,6 +151,17 @@ export const CategoriesPage: React.FC = () => {
   // START: Update
   const handleUpdateCategory = async () => {
     setIsLoading(true);
+
+    if(!name) {
+      Notification(
+        "Category name cannot be empty.",
+        "warning",
+        false
+      );
+
+      return;
+    }
+
     try {
       const response = await fetch(
         `${import.meta.env.VITE_API_URL}/category/update/${selectedCode}`,
@@ -170,9 +193,7 @@ export const CategoriesPage: React.FC = () => {
 
       await fetchCategory();
 
-      setName("");
-      setDescription("");
-      setSelectedCode(null);
+      onClear();
       setIsModalOpen(false);
 
       Notification(
@@ -200,7 +221,7 @@ export const CategoriesPage: React.FC = () => {
       const response = await fetch(
         `${import.meta.env.VITE_API_URL}/category/delete/${code}`,
         {
-          method: "POST",
+          method: "DELETE",
           headers: {
             "Content-Type": "application/json"
           },
@@ -243,10 +264,10 @@ export const CategoriesPage: React.FC = () => {
   // END: Delete
 
   // START: Function cancel
-  function onCancel() {
+  function onClear() {
     setName("");
     setDescription("");
-    setActiveStatus("active");
+    setActiveStatus(null);
     setSelectedCode(null);
   }
   // END: Function cancel
@@ -346,7 +367,11 @@ export const CategoriesPage: React.FC = () => {
                           onClick={(e) => {
                             e.stopPropagation();
                             setSelectedCode(item.code);
-                            handleUpdateModal(item.name, item.description);
+                            handleUpdateModal(
+                              item.name,
+                              item.description,
+                              item.isActive
+                            );
                           }}
                           className="inline-flex cursor-pointer items-center gap-1 font-medium text-[#2C4C3B] hover:underline"
                         >
@@ -416,7 +441,7 @@ export const CategoriesPage: React.FC = () => {
                 type="button"
                 onClick={() => {
                   setIsModalOpen(false);
-                  onCancel();
+                  onClear();
                 }}
                 className="rounded-lg p-1 text-[#6E7A74] hover:bg-stone-100 cursor-pointer"
               >
@@ -466,7 +491,7 @@ export const CategoriesPage: React.FC = () => {
                     Active Status <span className="text-[#182B20]">*</span>
                   </label>
                   <select
-                    value={activeStatus}
+                    value={activeStatus ?? ""}
                     onChange={(e) => setActiveStatus(e.target.value)}
                     className="w-full rounded-xl border border-stone-200 px-3.5 py-2.5 text-xs text-[#182B20] focus:border-[#2C4C3B] focus:outline-none"
                   >
@@ -481,7 +506,7 @@ export const CategoriesPage: React.FC = () => {
                   type="button"
                   onClick={() => {
                     setIsModalOpen(false);
-                    onCancel();
+                    onClear();
                   }}
                   className="rounded-full border border-stone-200 px-4 py-2 text-xs font-medium text-[#5A6560] hover:bg-stone-50 cursor-pointer"
                 >
@@ -508,7 +533,7 @@ export const CategoriesPage: React.FC = () => {
                 type="button"
                 onClick={() => {
                   setIsDeleteModalOpen(false);
-                  onCancel();
+                  onClear();
                 }}
                 className="rounded-lg p-1 text-[#6E7A74] hover:bg-stone-100 cursor-pointer"
               >
@@ -523,7 +548,7 @@ export const CategoriesPage: React.FC = () => {
                   type="button"
                   onClick={() => {
                     setIsDeleteModalOpen(false);
-                    onCancel();
+                    onClear();
                   }}
                   className="rounded-full border border-stone-200 px-4 py-2 text-sm font-medium text-[#5A6560] hover:bg-stone-50 cursor-pointer"
                 >

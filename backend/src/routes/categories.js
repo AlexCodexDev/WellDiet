@@ -5,9 +5,10 @@ const categoryRouter = Router();
 
 categoryRouter.get("/fetch", Controller.FetchController);
 
+categoryRouter.post("/create", Controller.CreateController);
+
 categoryRouter.put("/update/:code", Controller.UpdateController);
 
-categoryRouter.post("/create", Controller.CreateController);
-categoryRouter.post("/delete/:code", Controller.DeleteController);
+categoryRouter.delete("/delete/:code", Controller.DeleteController);
 
 export default categoryRouter;

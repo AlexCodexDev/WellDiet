@@ -16,7 +16,7 @@ export const CreateServices = async (data) => {
         throw new Error("Question cannot be empty.");
     }
 
-    const result = await DAO.CreateDAO({
+    await DAO.CreateDAO({
         name,
         description,
         question
@@ -40,7 +40,7 @@ export const UpdateServices = async (code, data) => {
         throw new Error("Status cannot be empty.");
     }
 
-    const result = await DAO.UpdateDAO(code, {
+    await DAO.UpdateDAO(code, {
         name,
         description,
         questionText,
@@ -54,6 +54,6 @@ export const DeleteServices = async (code) => {
         throw new Error("Cannot process : code not found.");
     }
 
-    const result = await DAO.DeleteDAO(code);
+    await DAO.DeleteDAO(code);
     return "Fact successful deleted.";
 }

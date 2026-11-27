@@ -20,7 +20,9 @@ export default function App() {
   return (
     <SnackbarProvider
       autoHideDuration={3000}
-      dense
+      dense={true}
+      maxSnack={3}
+      anchorOrigin={{ horizontal: "right", vertical: "bottom" }}
     >
       <AuthProvider>
         <Routes>

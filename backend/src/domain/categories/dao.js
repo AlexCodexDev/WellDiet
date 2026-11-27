@@ -3,7 +3,13 @@ import db from "../../db/index.js";
 export const FetchDAO = async () => {
     const [data] = await db.execute(
         `
-        SELECT code, name, description, is_active, created_at
+        SELECT
+            id,
+            code,
+            name,
+            description,
+            is_active,
+            created_at
         FROM diet_categories
         WHERE deleted_at IS NULL
         ORDER BY created_at DESC
@@ -116,7 +122,7 @@ export const CreateDAO = async (data) => {
 export const UpdateDAO = async (code, data) => {
     const name = data.name;
     const description = data.description ?? null;
-    const status = data.status === 1 ? true : false;
+    const status = data.activeStatus === "active" ? true : false;
 
     const [result] = await db.execute(
         `
